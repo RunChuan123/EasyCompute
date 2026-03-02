@@ -1,0 +1,57 @@
+#pragma once
+
+#include <vector>
+#include <iostream>
+#include <initializer_list>
+
+namespace EC
+{
+    struct Shape{
+        std::vector<size_t> dims;
+
+        Shape():dims(){}
+        Shape(const std::vector<size_t>& dims_):dims(dims_){}
+        Shape(std::initializer_list<size_t> il) : dims(il) {}
+
+        inline bool is_scalar()const{return dims.empty();}
+        inline bool is_vector()const{return dims.size()==1;}
+        inline bool is_matrix()const{return dims.size()==2;}
+        inline bool is_square()const{return is_matrix() && dims[0]==dims[1];}
+
+        inline size_t rank()const{return dims.size();}
+
+        inline size_t numel()const{
+            if(is_scalar()) return 1;
+            size_t n = 1;
+            for(size_t i:dims)n*=i;
+            return n;
+        }
+        
+        bool operator==(const Shape& o)const{return dims == o.dims;}
+
+        // 语法糖
+        size_t rows()const{return dims[0];}
+        size_t cols()const{return dims[1];}
+    };
+
+    inline std::ostream& operator<<(std::ostream& os,const Shape& s){
+        os << "[ ";
+        for(size_t i =0;i<s.dims.size();i++){
+            os << s.dims[i];
+            if(i != s.dims.size()-1) os << ", "; 
+        }
+        os << "]";
+        return os;
+    }
+
+    inline std::vector<size_t> make_strides(const Shape& shape){
+        if (shape.dims.empty()) {
+            return {0};
+        }
+        std::vector<size_t> strides{shape.dims.size(),1};
+        for (size_t i = shape.dims.size(); i > 1; --i) {
+            strides[i - 2] = strides[i - 1] * shape.dims[i - 1];
+        }
+        return strides;
+    }
+} // namespace EC

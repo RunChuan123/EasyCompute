@@ -1,0 +1,32 @@
+#pragma once
+#include <memory>
+#include <cassert>
+
+#include "tensor/tensor.hpp"
+#include "tensor/shape.hpp"
+#include "tensor/dtype.hpp"
+#include "tensor/device/device.hpp"
+
+namespace EC::AT{
+namespace NV{
+
+Tensor scalar(float value,DType dt);
+Tensor vector(std::initializer_list<float> vl,Shape s,DType dt);
+Tensor zeros(Shape s,DType dt);
+Tensor ones(Shape s,DType dt);
+Tensor E(Shape s,DType dt);
+
+Tensor uniform(Shape s, float low, float high,DType dt);
+Tensor normal(Shape s, float mean , float stddev,DType dt);
+
+
+
+std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype);
+void fill_(void* data,float value,DType dt,size_t size);
+
+
+    
+
+
+}
+}
