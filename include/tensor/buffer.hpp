@@ -15,6 +15,7 @@ struct Buffer{
     DType dtype;
     Device device;
     size_t align = 64;
+    size_t offset_bytes = 0;
 
     Buffer()=default;
     explicit Buffer(size_t bytes,DType dt=DType::f32,Device dev=Device::CPU,size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){
@@ -68,6 +69,7 @@ struct Buffer{
     // 获取数据指针
     void* data_ptr(){return ptr;}
     const void* data_ptr()const{return ptr;}
+
 
 };
 

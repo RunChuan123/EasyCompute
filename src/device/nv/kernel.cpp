@@ -22,6 +22,13 @@ Tensor E(Shape s,DType dt){}
 
 Tensor uniform(Shape s, float low, float high,DType dt){}
 Tensor normal(Shape s, float mean , float stddev,DType dt){}
+Tensor from_symbol(int32_t vid,Shape s,DType dt, bool req_grad){
+    Tensor t{std::move(s),0.0f,dt,Device::NV_GPU,req_grad};
+    t.sym_ = vid;
+    return t;
+
+}
+
 
 float det(){}
 Tensor submatrix(size_t ex_row,size_t ex_col){}

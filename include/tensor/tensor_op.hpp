@@ -8,37 +8,10 @@
 #include "dtype.hpp"
 #include "tensor.hpp"
 #include "device/device.hpp"
+#include "TOp.hpp"
 
 namespace EC
 {
-
-enum class TOp{
-    ew_add=0,
-    ew_sub,
-    ew_mul,
-    ew_div,
-    sin,
-    sin_,
-    gemm,
-    gemv,
-    cat,
-    stack,
-    reshape,
-    permute,
-    sigmoid,
-    transpose,
-    relu,
-    det,
-    submatrix,
-    adjugate,
-    inverse,
-    lu_decompose_crout,
-    lu_decompose_doolittle,
-
-    NumOp
-
-};
-namespace AT{
 
 
 using IValue = std::variant<
@@ -48,9 +21,14 @@ size_t,
 int8_t,
 int32_t,
 Shape,
-Tensor,
-std::pair<Tensor,Tensor>
+AT::Tensor,
+std::pair<AT::Tensor,AT::Tensor>
 >;
+
+namespace AT{
+
+
+
 
 template<typename T>
 T& ivalue_cast(IValue& v) {

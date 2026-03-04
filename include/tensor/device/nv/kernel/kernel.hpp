@@ -18,7 +18,7 @@ Tensor E(Shape s,DType dt);
 
 Tensor uniform(Shape s, float low, float high,DType dt);
 Tensor normal(Shape s, float mean , float stddev,DType dt);
-
+Tensor from_symbol(int32_t vid,Shape s,DType dt, bool req_grad);
 
 
 std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype);

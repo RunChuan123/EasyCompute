@@ -1,6 +1,4 @@
 #pragma once
 
-#include "tensor/tensor.hpp"
-#include "tensor/tensor_op.hpp"
-
-
+#include "tensor/api.hpp"
+#include "graph/api.hpp"

@@ -47,20 +47,24 @@ Tensor uniform(Shape s, float low, float high,DType dt){
     return t;
 }
 Tensor normal(Shape s, float mean , float stddev,DType dt){
-    static std::atomic<size_t> c{0};
-  std::cerr << "Tensor::normal " << ++c << "\n";
+//     static std::atomic<size_t> c{0};
+//   std::cerr << "Tensor::normal " << ++c << "\n";
   
     if (stddev <= 0.0F) {
         throw std::runtime_error("normal: stddev must be > 0");
     }
     Tensor t(::std::move(s), 0.0F, dt,Device::CPU);
     RandomGenerator::getInstance().fillNormalBatch<float>(t.data_ptr<float>(),t.size(),mean,stddev);
-    std::cerr << "numel=" << t.size()
-          << " bytes=" << t.data_->nbytes
-          << " ptr=" << t.data_->ptr << "\n";
+
     return t;
 }
 
+Tensor from_symbol(ValueId vid,Shape s,DType dt, bool req_grad){
+    Tensor t{std::move(s),0.0f,dt,Device::CPU,req_grad};
+    t.sym_ = vid;
+    return t;
+
+}
 
 namespace MatrixTOp{
 

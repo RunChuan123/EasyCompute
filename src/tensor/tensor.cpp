@@ -99,8 +99,6 @@ Tensor Tensor::uniform(Shape s, float low, float high,DType dt, Device dev){
     }
 }
 Tensor Tensor::normal(Shape s, float mean , float stddev,DType dt, Device dev){
-    static std::atomic<size_t> c{0};
-    std::cerr << "Tensor::normal " << ++c << "\n";
     switch (dev){
         case Device::CPU:   return CPU::normal(s,mean,stddev,dt);
         case Device::NV_GPU: return NV::normal(s,mean,stddev,dt);
@@ -108,6 +106,17 @@ Tensor Tensor::normal(Shape s, float mean , float stddev,DType dt, Device dev){
         throw TensorException("Unsupported device");
     }
 }
+
+Tensor Tensor::from_symbol(ValueId vid,Shape s,DType dt, Device dev, bool req_grad){
+
+        switch (dev){
+        case Device::CPU:   return CPU::from_symbol(vid, s, dt,  req_grad);
+        case Device::NV_GPU: return NV::from_symbol(vid, s, dt,  req_grad);
+        default:
+        throw TensorException("Unsupported device");
+    }
+}
+
 
 void Tensor::allocate_(DType dtype,Device device){
     size_t bytes = size() * size_DType(dtype);

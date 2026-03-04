@@ -7,10 +7,13 @@
 #include "buffer.hpp"
 #include "shape.hpp"
 #include "../util/err.hpp"
+// #include "graph/api.hpp"
 // #include "../util/rand.h"
 
 namespace EC{
 namespace AT{
+
+using ValueId = int32_t;
 
 struct Tensor{
 
@@ -19,9 +22,13 @@ struct Tensor{
     DType dtype_=DType::f32;
     Device device_=Device::CPU;
 
+    bool requires_grad_ = false;
+    // ValueId
+    std::optional<ValueId> sym_;
+
     Tensor()=default;
-    explicit Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,Device dev = Device::CPU)
-    : shape_(std::move(s)), dtype_(dtype), device_(dev) {
+    explicit Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,Device dev = Device::CPU,bool requires_grad = false)
+    : shape_(std::move(s)), dtype_(dtype), device_(dev),requires_grad_(requires_grad) {
         allocate_(dtype_,device_);
         fill_(value);
     }
@@ -37,13 +44,18 @@ struct Tensor{
     size_t numel() const { return shape_.numel(); }
     DType dtype() const { return dtype_; }
     Device device() const { return device_; }
-
+    bool requires_grad() const { return requires_grad_; }
+    void set_requires_grad(bool i) { requires_grad_ = i; }
+    bool is_symbolic() const {return sym_.has_value();}
+    int32_t sym() const {return sym_.value(); }
     template<typename T>
     inline T* data_ptr(){return static_cast<T*>(data_->data_ptr());}
 
     template<typename T>
     inline const T* data_ptr()const{return static_cast<const T*>(data_->data_ptr());}
 
+    inline const Buffer* buffer_ptr()const{return data_.get();}
+    inline size_t offset_bytes() const { return data_->offset_bytes; }
     std::vector<size_t> strides()const{return make_strides(shape_);}
     // no data
     inline bool empty()const{return !data_;}
@@ -55,6 +67,7 @@ struct Tensor{
     inline bool is_matrix() const { return shape_.is_matrix(); }
     inline bool is_square() const { return shape_.is_square(); }
     void print(size_t width = 4,size_t prec = 2)const;
+
     static Tensor scalar(float value,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor vector(std::initializer_list<float> vl,Shape s,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor zeros(Shape s,DType dt=DType::f32, Device dev = Device::CPU);
@@ -62,10 +75,8 @@ struct Tensor{
     static Tensor E(Shape s,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor uniform(Shape s, float low = 0.0F, float high = 1.0F,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor normal(Shape s, float mean = 0.0F, float stddev = 1.0F,DType dt=DType::f32, Device dev = Device::CPU);
+    static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, Device dev = Device::CPU, bool req_grad=true);// ?
 
-    /** 
-     * same pointer to the datamemory
-     */
     inline Tensor view() const{
         Tensor out;
         out.data_ = data_;
