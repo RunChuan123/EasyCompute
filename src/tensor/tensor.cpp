@@ -72,6 +72,11 @@ Tensor Tensor::zeros(Shape s,DType dt, Device dev ){
         throw TensorException("Unsupported device");
     }
 }
+
+Tensor Tensor::likes(Tensor& rhs,float v){
+    Tensor t{rhs.shape(),v,rhs.dtype(),rhs.device(),rhs.requires_grad()};
+    return t;
+}
 Tensor Tensor::ones(Shape s,DType dt, Device dev){
     switch (dev){
         case Device::CPU:   return CPU::ones(s,dt);

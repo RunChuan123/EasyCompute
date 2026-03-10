@@ -21,8 +21,9 @@ struct Tensor{
     Shape shape_ ;
     DType dtype_=DType::f32;
     Device device_=Device::CPU;
-
+    
     bool requires_grad_ = false;
+    std::shared_ptr<Tensor> grad_;
     // ValueId
     std::optional<ValueId> sym_;
 
@@ -71,6 +72,7 @@ struct Tensor{
     static Tensor scalar(float value,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor vector(std::initializer_list<float> vl,Shape s,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor zeros(Shape s,DType dt=DType::f32, Device dev = Device::CPU);
+    static Tensor likes(Tensor& rhs,float v=0.0f);
     static Tensor ones(Shape s,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor E(Shape s,DType dt=DType::f32, Device dev = Device::CPU);
     static Tensor uniform(Shape s, float low = 0.0F, float high = 1.0F,DType dt=DType::f32, Device dev = Device::CPU);

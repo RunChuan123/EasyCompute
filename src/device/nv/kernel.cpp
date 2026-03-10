@@ -1,9 +1,13 @@
 
 #include <memory>
+#include <stdio.h>
 #include <cassert>
 
+
 #include "tensor/tensor.hpp"
-// #include "tensor/device/cpu/kernel/kernel_naive.hpp"
+#include "tensor/tensor_op.hpp"
+#include "tensor/device/nv/kernel/kernel.hpp"
+#include "tensor/meta.hpp"
 #include "util/rand.h"
 
 namespace EC::AT{
@@ -40,11 +44,11 @@ std::pair<Tensor,Tensor> lu_decompose_crout(const Tensor& t){}
 
 std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype){}
 void fill_(void* data,float value,DType dt,size_t size){}
+}
 
+void register_cuda_kernels(KernelTable& kt){
+    // kt.register_kernel()
 
 }
 
-void register_cuda_kernels(){
-
-}
 }

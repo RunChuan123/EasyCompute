@@ -23,7 +23,7 @@ namespace Tr{
 struct TensorKey{
     const Buffer* buf =  nullptr;
     size_t offset_bytes;
-    bool operator==(const TensorKey& o){return buf == o.buf && offset_bytes == o.offset_bytes;}
+    bool operator==(const TensorKey& o)const{return buf == o.buf && offset_bytes == o.offset_bytes;}
 };
 struct TensorKeyHash{
     size_t operator()(const TensorKey& k) const noexcept {

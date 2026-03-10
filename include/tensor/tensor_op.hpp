@@ -25,11 +25,6 @@ AT::Tensor,
 std::pair<AT::Tensor,AT::Tensor>
 >;
 
-namespace AT{
-
-
-
-
 template<typename T>
 T& ivalue_cast(IValue& v) {
     if (!std::holds_alternative<T>(v)) {
@@ -45,6 +40,9 @@ const T& ivalue_cast(const IValue& v) {
     }
     return std::get<T>(v);
 }
+
+namespace AT{
+
 
 struct KernelContext {
     Device device;
@@ -85,68 +83,58 @@ struct KernelContext {
 };
 
 
-
-using KernelFunc = void(*)(KernelContext&);
-
 static constexpr uint8_t NumDType_ = (int)DType::NumDType;
 static constexpr uint8_t NumDevice_ = (int)Device::NumDevice;
 static constexpr uint8_t NumOp_ = (int)TOp::NumOp;
-
-extern KernelFunc kernel_table[NumDevice_][NumDType_][NumOp_];
 
 static void not_implemented(KernelContext& ) {
     throw TensorException("Kernel not implemented for this op/dtype/device");
 }
 
-inline void init_table_default() {
-    for (int dt = 0; dt < NumDType_; ++dt)
-      for (int dev = 0; dev < NumDevice_; ++dev)
-        for (int op = 0; op < NumOp_; ++op)
-          kernel_table[dev][dt][op] = &not_implemented;
-}
+struct KernelTable{
+    using KernelFunc = void(*)(KernelContext&);
 
-inline void register_kernel(TOp op, DType dt, Device dev, KernelFunc fn) {
-    kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op] = fn;
-}
+    KernelFunc kernel_table[NumDevice_][NumDType_][NumOp_];
 
-inline KernelFunc lookup(TOp op, DType dt, Device dev) {
-    return kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op];
-}
+    KernelTable(){
+        // 初始化
+        for (int dt = 0; dt < NumDType_; ++dt)
+            for (int dev = 0; dev < NumDevice_; ++dev)
+                for (int op = 0; op < NumOp_; ++op)
+                kernel_table[dev][dt][op] = &not_implemented;
+    }
 
-// 便利一点，单返回直接调用 dispatch，多返回还是用 ctx.ouputs
-template<typename R>
-inline R dispatch(TOp op, DType dt,Device dev, auto&&... args) {
-    KernelContext ctx{dev, dt,{},{},{}};
-    (ctx.inputs.emplace_back(std::forward<decltype(args)>(args)), ...);
+    inline void register_kernel(TOp op, DType dt, Device dev, KernelFunc fn) {
+        kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op] = fn;
+    }
 
-    auto fn = lookup(op, dt, dev);
-    fn(ctx);
+    inline KernelFunc lookup(TOp op, DType dt, Device dev) {
+        return kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op];
+    }
 
-    return ctx.output<R>(0);
-}
 
-// 由各后端实现
-void register_cpu_kernels();
-void register_cuda_kernels();
+    template<typename R>
+    inline R dispatch_without_attrs(TOp op, DType dt,Device dev, auto&&... args) {
+        KernelContext ctx{dev, dt,{},{},{}};
+        (ctx.inputs.emplace_back(std::forward<decltype(args)>(args)), ...);
+        auto fn = lookup(op, dt, dev);
+        fn(ctx); 
+        return ctx.output<R>(0);
+    }
+};
 
-inline void register_all_kernels() {
-    static bool done = false;
-    if (done) return;
-    done = true;
+inline KernelTable& GlobalKernelTable(){
+    static KernelTable table;
+    return table;
+} 
 
-    init_table_default();
-    register_cpu_kernels();
-#ifdef EC_AT_USE_CUDA
-    register_cuda_kernels();
-#endif
-}
+void register_cpu_kernels(KernelTable& kt);
+void register_cuda_kernels(KernelTable& kt);
 
-static std::once_flag register_flag;
+inline void register_all_kernels(){
+    register_cpu_kernels(GlobalKernelTable());
+    register_cuda_kernels(GlobalKernelTable());
 
-inline void ensure_kernels_registered() {
-    std::call_once(register_flag, [](){
-        register_all_kernels();
-    });
 }
 
 
@@ -155,6 +143,23 @@ Tensor sub(Tensor& a,Tensor& b);
 Tensor mul(Tensor& a,Tensor& b);
 Tensor div(Tensor& a,Tensor& b);
 Tensor sin(Tensor& a);
+Tensor gemv(const Tensor& A,const Tensor& x,const Tensor& y,float alpha=1.0,float beta=0.0);
+Tensor gemm(Tensor& a,Tensor& b);
+
+
+//     cat,
+//     stack,
+//     reshape,
+//     permute,
+//     sigmoid,
+//     transpose,
+//     relu,
+//     det,
+//     submatrix,
+//     adjugate,
+//     inverse,
+//     lu_decompose_crout,
+//     lu_decompose_doolittle,
 
 inline Tensor operator+(Tensor& a,Tensor& b){return add(a,b);}
 inline Tensor operator-(Tensor& a,Tensor& b){return sub(a,b);}

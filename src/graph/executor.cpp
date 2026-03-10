@@ -35,7 +35,7 @@ RunResult Executor::run(const Graph& g, const std::unordered_map<ValueId, AT::Te
         // k.attrs = n.attrs;
 
         // lookup + call
-        auto fn = AT::lookup(n.op, t0.dtype(), t0.device());
+        auto fn = AT::GlobalKernelTable().lookup(n.op, t0.dtype(), t0.device());
         fn(k);
 
         // 写回 outputs

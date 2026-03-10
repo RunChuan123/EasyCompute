@@ -115,13 +115,13 @@ Tensor add_imlp(const Tensor& a,const Tensor& b){
     }
     return out;
 } 
-
 void add_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);
     Tensor out = add_imlp(a,b);
     ctx.set_output(0,out);
 }
+
 Tensor sub_imlp(const Tensor& a,const Tensor& b){
     Tensor out{a.shape(),0.0f,a.dtype(),a.device()};
     auto [pa,pb,po] = get_data_ptrs_17<float>(a,b,out);
@@ -130,13 +130,13 @@ Tensor sub_imlp(const Tensor& a,const Tensor& b){
     }
     return out;
 } 
-
 void sub_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);
     Tensor out = sub_imlp(a,b);
     ctx.set_output(0,out);
 }
+
 Tensor mul_imlp(const Tensor& a,const Tensor& b){
     Tensor out{a.shape(),0.0f,a.dtype(),a.device()};
     auto [pa,pb,po] = get_data_ptrs_17<float>(a,b,out);
@@ -145,13 +145,13 @@ Tensor mul_imlp(const Tensor& a,const Tensor& b){
     }
     return out;
 } 
-
 void mul_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);
     Tensor out = mul_imlp(a,b);
     ctx.set_output(0,out);
 }
+
 Tensor div_imlp(const Tensor& a,const Tensor& b){
     Tensor out{a.shape(),0.0f,a.dtype(),a.device()};
     auto [pa,pb,po] = get_data_ptrs_17<float>(a,b,out);
@@ -160,7 +160,6 @@ Tensor div_imlp(const Tensor& a,const Tensor& b){
     }
     return out;
 } 
-
 void div_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);
@@ -176,7 +175,6 @@ Tensor sin_imlp(const Tensor& t){
     }
     return out;
 }
-
 void sin__imlp(Tensor& t){
     auto [pt] = get_data_ptrs_17<float>(t);
     for(size_t i=0;i<t.size();i++){
@@ -195,22 +193,55 @@ void sin__kernel(KernelContext& ctx){
     sin__imlp(t);
 }
 
+Tensor gemv_impl(const Tensor& A,const Tensor& x,const Tensor& y,float a,float b){
+    // 先做二维矩阵向量乘，
+    Shape s = A.shape().clone().set(-1,1);
+    Tensor out{s,0.0f,A.dtype(),A.device()};
+    auto [pa,px,py,po] = get_data_ptrs_17<float>(A,x,y,out);
+    size_t out_idx = A.shape().get(-2);
+    size_t inn_idx = A.shape().get(-1);
+    for(size_t i = 0;i<out_idx;i++){
+        float accu = 0.0f;
+        for(size_t j = 0;j<inn_idx;j++){
+            accu += pa[i*inn_idx+j] * px[j];
+        }
+        po[i] = accu * a + b * py[i];
+    }
+    return out;
+}
 
+void gemv_kernel(KernelContext& ctx){
+    Tensor A = ctx.input<Tensor>(0);
+    Tensor x = ctx.input<Tensor>(1);
+    Tensor y = ctx.input<Tensor>(2);
+    float alpha = ctx.input<float>(3);
+    float beta = ctx.input<float>(4);
+    Tensor out = gemv_impl(A,x,y,alpha,beta);
+    ctx.set_output(0,out);
 }
 
 
 
-void register_cpu_kernels(){
-    register_kernel(TOp::det,DType::f32,Device::CPU,CPU::MatrixTOp::det_kernel);
-    register_kernel(TOp::inverse,DType::f32,Device::CPU,CPU::MatrixTOp::inverse_kernel);
-    register_kernel(TOp::adjugate,DType::f32,Device::CPU,CPU::MatrixTOp::adjugate_kernel);
-    register_kernel(TOp::ew_add,DType::f32,Device::CPU,CPU::add_kernel);
-    register_kernel(TOp::ew_sub,DType::f32,Device::CPU,CPU::sub_kernel);
-    register_kernel(TOp::ew_mul,DType::f32,Device::CPU,CPU::mul_kernel);
-    register_kernel(TOp::ew_div,DType::f32,Device::CPU,CPU::div_kernel);
-    register_kernel(TOp::ew_div,DType::f32,Device::CPU,CPU::div_kernel);
-    register_kernel(TOp::sin,DType::f32,Device::CPU,CPU::sin_kernel);
-    register_kernel(TOp::sin_,DType::f32,Device::CPU,CPU::sin__kernel);
+}
+
+
+// Tensor gemv(Tensor& A,Tensor& x,Tensor& y,float alpha,float beta){
+//     auto fn = GlobalKernelTable().lookup(TOp::gemv,DType::f32,Device::CPU);
+//     KernelContext k{A.device(),A.dtype(),{A,x,y,alpha,beta},{},{}};
+
+
+void register_cpu_kernels(KernelTable& kt){
+    kt.register_kernel(TOp::det,DType::f32,Device::CPU,CPU::MatrixTOp::det_kernel);
+    kt.register_kernel(TOp::inverse,DType::f32,Device::CPU,CPU::MatrixTOp::inverse_kernel);
+    kt.register_kernel(TOp::adjugate,DType::f32,Device::CPU,CPU::MatrixTOp::adjugate_kernel);
+    kt.register_kernel(TOp::ew_add,DType::f32,Device::CPU,CPU::add_kernel);
+    kt.register_kernel(TOp::ew_sub,DType::f32,Device::CPU,CPU::sub_kernel);
+    kt.register_kernel(TOp::ew_mul,DType::f32,Device::CPU,CPU::mul_kernel);
+    kt.register_kernel(TOp::ew_div,DType::f32,Device::CPU,CPU::div_kernel);
+    kt.register_kernel(TOp::ew_div,DType::f32,Device::CPU,CPU::div_kernel);
+    kt.register_kernel(TOp::sin,DType::f32,Device::CPU,CPU::sin_kernel);
+    kt.register_kernel(TOp::sin_,DType::f32,Device::CPU,CPU::sin__kernel);
+    kt.register_kernel(TOp::gemv,DType::f32,Device::CPU,CPU::gemv_kernel);
 
 }
 

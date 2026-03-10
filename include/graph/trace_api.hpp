@@ -5,7 +5,7 @@
 #include <optional>
 #include "tensor/TOp.hpp"
 
-namespace EC::AT { class Tensor; }          // forward declare Tensor
+namespace EC::AT { struct Tensor; }          // forward declare Tensor
 // namespace EC::Gr {  }
 
 namespace EC::Tr {
