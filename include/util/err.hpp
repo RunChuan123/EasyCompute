@@ -61,4 +61,22 @@ namespace EC
             err_msg_ = oss.str();
         }
     };
+    class BufferException : public ECException {
+    public:
+        BufferException(const std::string& msg) : ECException(msg) {
+            // 可选：拼接更详细的错误信息（比如tensor ID）
+            std::ostringstream oss;
+            oss << "[BufferException] " << msg;
+            err_msg_ = oss.str();
+        }
+    };
+    class DeviceException : public ECException {
+    public:
+        DeviceException(const std::string& msg) : ECException(msg) {
+            // 可选：拼接更详细的错误信息（比如tensor ID）
+            std::ostringstream oss;
+            oss << "[DeviceException] " << msg;
+            err_msg_ = oss.str();
+        }
+    };
 } // namespace EC

@@ -2,6 +2,7 @@
 #include <memory>
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "tensor/tensor_op.hpp"
 #include "tensor/tensor.hpp"
@@ -98,7 +99,8 @@ void inverse_kernel(KernelContext& ctx){
 
 }
 
-std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype){return std::make_shared<Buffer>(bytes,dtype,Device::CPU);}
+std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype)
+{return std::make_shared<Buffer>(bytes,dtype,Device::CPU);}
 void fill_(void* data,float value,DType dt,size_t size){
     // assert(dt == DType::f32);
     float* p = static_cast<float*>(data);
@@ -171,14 +173,14 @@ Tensor sin_imlp(const Tensor& t){
     Tensor out{t.shape(),0.0f,t.dtype(),t.device()};
     auto [pt,po] = get_data_ptrs_17<float>(t,out);
     for(size_t i=0;i<t.size();i++){
-        po[i] = std::sinf(pt[i]);
+        po[i] = std::sin(pt[i]);
     }
     return out;
 }
 void sin__imlp(Tensor& t){
     auto [pt] = get_data_ptrs_17<float>(t);
     for(size_t i=0;i<t.size();i++){
-        pt[i] = std::sinf(pt[i]);
+        pt[i] = std::sin(pt[i]);
     }
 }
 

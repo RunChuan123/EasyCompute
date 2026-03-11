@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <memory>
 #include <utility>
+#include <optional>
 
 #include "buffer.hpp"
 #include "shape.hpp"
