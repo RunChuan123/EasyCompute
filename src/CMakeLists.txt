@@ -3,6 +3,7 @@
 # 步骤1：收集所有源码文件（递归查找src下的所有.cpp/.cu文件）
 file(GLOB_RECURSE EASY_COMPUTE_SRCS 
      ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/*.cu
     #  ${CMAKE_CURRENT_SOURCE_DIR}/*.cu)  # 若有CUDA源码（.cu）
 )
 # 步骤2：排除不需要编译的文件（可选，比如测试代码）
@@ -22,12 +23,31 @@ target_include_directories(easycompute
 
 # 步骤5：若启用GPU，链接CUDA库（可选）
 if(EASY_COMPUTE_ENABLE_GPU)
-    # 查找CUDA库（CMake 3.10+）
+    # 查找CUDA Toolkit（CMake 3.17+推荐方式）
     find_package(CUDAToolkit REQUIRED)
-    # 链接CUDA库
+    
+    # 链接CUDA核心库（cudart）
     target_link_libraries(easycompute PRIVATE CUDA::cudart)
-    # 给GPU相关源码添加编译定义（代码中可通过#ifdef EASY_COMPUTE_GPU判断）
+    # 可选：链接其他CUDA库（如cublas、curand）
+    # target_link_libraries(easycompute PRIVATE CUDA::cublas CUDA::curand)
+    
+    # 定义编译宏（代码中用#ifdef EASY_COMPUTE_GPU判断）
     target_compile_definitions(easycompute PRIVATE EASY_COMPUTE_GPU)
+    
+    # CUDA编译选项（针对.cu文件）
+    target_compile_options(easycompute
+        PRIVATE
+            # CUDA通用选项
+            $<$<COMPILE_LANGUAGE:CUDA>:
+                -lineinfo,        # 调试时保留行号信息
+                -use_fast_math,   # 启用快速数学函数
+                -Xcompiler=-Wall  # 给CUDA的宿主编译器传递警告选项
+            >
+            # Windows下CUDA编译选项
+            $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CXX_COMPILER_ID:MSVC>>:
+                -Xcompiler=/W4 /WX
+            >
+    )
 endif()
 
 # 步骤6：可选：添加编译选项（警告、优化）

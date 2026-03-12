@@ -51,23 +51,25 @@ template<typename T>
 T& Tensor::at(const Shape& index){
     if(dtype_ != get_dtype<T>()) 
         throw TensorException("DType mismatch");
-    switch(device_.type()):
+    switch(device_.type()){
     case DeviceType::CPU :
         return data_ptr<T>()[offset(index)];
     case DeviceType::CUDA :
     // TODO
         return data_ptr<T>()[offset(index)];
+    }
 }
 template<typename T>
 const T& Tensor::at(const Shape& index) const{
   if(dtype_ != get_dtype<T>()) 
         throw TensorException("DType mismatch");
-    switch(device_.type()):
+    switch(device_.type()){
     case DeviceType::CPU :
         return data_ptr<T>()[offset(index)];
     case DeviceType::CUDA :
     // TODO
         return data_ptr<T>()[offset(index)];
+    }
 }
 
 Tensor Tensor::view(Shape s) const{
@@ -98,22 +100,7 @@ Tensor& Tensor::reshape(Shape s){
     shape_ = s;
     return *this;
 }
-template<typename T>
-T& Tensor::at(const Shape& index) { 
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, int> || std::is_same_v<T, double>,"Unsupported data type for Tensor::at");
-    if (dtype_ != get_dtype<T>()) { 
-        throw TensorException("Type mismatch in Tensor::at!");
-    }
-    return data_ptr<T>()[offset(index)];
-}
-template<typename T>
-const T& Tensor::at(const Shape& index) const {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, int> || std::is_same_v<T, double>,"Unsupported data type for Tensor::at");
-    if (dtype_ != get_dtype<T>()) {
-        throw TensorException("Type mismatch in Tensor::at!");
-    }
-    return data_ptr<const T>()[offset(index)];
-}
+
 Tensor Tensor::scalar(float value,DType dt, Device dev){
     switch (dev.type()){
         case DeviceType::CPU:   return CPU::scalar(value,dt);
@@ -124,7 +111,7 @@ Tensor Tensor::scalar(float value,DType dt, Device dev){
 }
 Tensor Tensor::vector(std::initializer_list<float> vl,Shape s,DType dt, Device dev){
     switch (dev.type()){
-        case DeviceType::CPU   return CPU::vector(vl,s,dt);
+        case DeviceType::CPU:  return CPU::vector(vl,s,dt);
         case DeviceType::CUDA: return NV::vector(vl,s,dt);
         default:
         throw TensorException("Unsupported device");
@@ -140,7 +127,7 @@ Tensor Tensor::zeros(Shape s,DType dt, Device dev ){
 }
 
 Tensor Tensor::likes(Tensor& rhs,float v){
-    Tensor t{rhs.getShape(),v,rhs.dtype(),rhs.device(),rhs.requires_grad()};
+    Tensor t{rhs.getShape(),v,rhs.getDtype(),rhs.getDevice(),rhs.requires_grad()};
     return t;
 }
 Tensor Tensor::ones(Shape s,DType dt, Device dev){
@@ -190,6 +177,14 @@ Tensor Tensor::normal(Shape s, float mean , float stddev,DType dt, Device dev){
 
 
 void Tensor::allocate_(){
+    switch (device_.type()){
+    case DeviceType::CPU :
+        /* code */
+        break;
+    
+    default:
+        break;
+    }
 
     size_t bytes = size() * size_dtype(dtype_);
     data_ = std::make_shared<Buffer>(bytes,dtype_,device);

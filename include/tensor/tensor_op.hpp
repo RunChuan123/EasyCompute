@@ -84,7 +84,7 @@ struct KernelContext {
 
 
 static constexpr uint8_t NumDType_ = (int)DType::NumDType;
-static constexpr uint8_t NumDevice_ = (int)Device::NumDevice;
+static constexpr uint8_t NumDevice_ = (int)DeviceType::NumDevice;
 static constexpr uint8_t NumOp_ = (int)TOp::NumOp;
 
 static void not_implemented(KernelContext& ) {
@@ -104,11 +104,11 @@ struct KernelTable{
                 kernel_table[dev][dt][op] = &not_implemented;
     }
 
-    inline void register_kernel(TOp op, DType dt, Device dev, KernelFunc fn) {
+    inline void register_kernel(TOp op, DType dt, DeviceType dev, KernelFunc fn) {
         kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op] = fn;
     }
 
-    inline KernelFunc lookup(TOp op, DType dt, Device dev) {
+    inline KernelFunc lookup(TOp op, DType dt, DeviceType dev) {
         return kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op];
     }
 

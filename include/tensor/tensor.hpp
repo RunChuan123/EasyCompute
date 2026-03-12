@@ -41,7 +41,7 @@ struct Tensor{
 public:
 
     Tensor()=default;
-    explicit Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,
+    Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,
                     Device dev = Device::cpu(),bool requires_grad = false)
     : id_(TensorId{}),shape_(std::move(s)), dtype_(dtype), device_(dev),requires_grad_(requires_grad) {
         id_.tensor_id = t_local_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
@@ -126,8 +126,6 @@ public:
     void to(Device dev);
     void to(DType dt);
 
-    Tensor& dtype(DType dt);
-    Tensor& device(Device dev);
 
 private:
 

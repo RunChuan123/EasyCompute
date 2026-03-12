@@ -4,14 +4,19 @@
 #include <memory>
 #include <unordered_map>
 
-namespace EC::Device
+#include "../device.hpp"
+
+namespace EC::Dev
 {
 
-struct CPUContext{
+struct CPUContext {
 
     // TODO
     void* mem_pool = nullptr;
     std::mutex ctx_mutex;
+
+
+    DeviceType type() const { return DeviceType::CPU; }
 
     static std::shared_ptr<CPUContext> get_instance(int dev_id){
         static std::shared_ptr<CPUContext> ctx;

@@ -20,12 +20,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON) # 强制使用指定的C++标准
 set(CMAKE_CXX_EXTENSIONS OFF)       # 禁用编译器扩展（跨平台）
 
 # 可选：若项目支持GPU（CUDA），开启CUDA支持
-option(EASY_COMPUTE_ENABLE_GPU "Enable GPU support" OFF)
+option(EASY_COMPUTE_ENABLE_GPU "Enable GPU support" ON)
 if(EASY_COMPUTE_ENABLE_GPU)
     enable_language(CUDA)
     # 设置CUDA标准（可选）
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    set(CMAKE_CUDA_EXTENSIONS OFF)
+    # 关键：指定CUDA架构（避免编译警告，适配你的GPU）
+    # 可填多个架构：比如 75(RTX20/30)、80(A100)、86(RTX30/40)、89(RTX40)、90(RTX50)
+    set(CMAKE_CUDA_ARCHITECTURES 75 86 89)
 endif()
 
 # 输出路径：统一编译产物路径（可选，方便管理）

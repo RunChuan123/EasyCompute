@@ -45,7 +45,7 @@ constexpr DType get_dtype<int8_t>() {
     return DType::i8;
 }
 
-#ifdef USE_CUDA
+#ifdef CUDA_ENABLED
 template<>
 constexpr DType get_dtype<__nv_bfloat>() {
     return DType::i8;

@@ -4,7 +4,9 @@
 #include <exception>
 
 #include "dtype.hpp"
+#include "util/err.hpp"
 #include "device/device.hpp"
+#include "device/manager.cuh"
 
 namespace EC {
 
