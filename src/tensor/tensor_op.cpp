@@ -2,7 +2,7 @@
 
 #include "tensor/tensor_op.hpp"
 #include "tensor/tensor.hpp"
-#include "graph/trace_api.hpp"
+#include "graph/trace/api.hpp"
 
 namespace EC{
 namespace AT{

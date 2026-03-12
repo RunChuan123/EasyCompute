@@ -1,5 +1,5 @@
 #include "graph.hpp"
 #include "node.hpp"
-#include "trace_ctx.hpp"
-#include "trace_api.hpp"
+#include "trace/ctx.hpp"
+#include "trace/api.hpp"
 #include "executor.hpp"

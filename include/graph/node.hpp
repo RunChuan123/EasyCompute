@@ -2,21 +2,21 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
+#include <unordered_map>
 
 #include "tensor/api.hpp"
+#include "kind.hpp"
 // #include "tensor/tensor.hpp"
 // #include "tensor/tensor_op.hpp"
 namespace EC::Gr{
 
+    
+
 using ValueId = int32_t;
 using NodeId = int32_t;
 
-enum class ValueKind : uint8_t{
-    Input,
-    Param,
-    Const,
-    Temp
-};
+
 
 struct TensorMeta{
     Shape shape;
@@ -28,11 +28,11 @@ struct Value{
     ValueId id;
     TensorMeta meta;
     ValueKind kind = ValueKind::Temp;
+    std::string name;
     bool requires_grad = false;
 
-    NodeId producer = -1;
+    std::optional<NodeId> producer;
     std::vector<NodeId> users;
-    std::string name;
 };
 
 struct Node{
@@ -43,13 +43,11 @@ struct Node{
     std::vector<ValueId> attrs;
     
     std::string name;   
-    AT::KernelContext ctx;
+    std::string scope;
+
+    std::unordered_map<std::string,std::string> meta;
+    // AT::KernelContext& ctx;
 
 };
-
-
-
-
-
 
 }
