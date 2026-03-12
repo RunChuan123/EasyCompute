@@ -17,13 +17,10 @@ enum class DType:uint8_t{
     Unknow
 };
 
+
+// 基本类型转 DType
 template<typename T>
-constexpr DType get_dtype() {
-    // 不支持的类型
-    static_assert(!std::is_same_v<T, T>, 
-                    "get_dtype<T>(): Unsupported data type (no specialization for this type)");
-    return DType::Unknow; // 永远不会执行到这里
-}
+constexpr DType get_dtype();
 // 特化float → f32
 template<>
 constexpr DType get_dtype<float>() {
@@ -48,11 +45,21 @@ constexpr DType get_dtype<int8_t>() {
     return DType::i8;
 }
 
+#ifdef USE_CUDA
+template<>
+constexpr DType get_dtype<__nv_bfloat>() {
+    return DType::i8;
+}
+
+#endif
+
 template<typename T>
 using DTypeOf = decltype(get_dtype<T>());
 
+
+
 // 3. 反向映射：从DType枚举获取类型大小（可选，辅助功能）
-constexpr size_t size_DType(DType dtype) {
+constexpr size_t size_dtype(DType dtype) {
     switch (dtype) {
         case DType::f32:  return sizeof(float);
         case DType::i32:  return sizeof(int);
@@ -63,7 +70,7 @@ constexpr size_t size_DType(DType dtype) {
 }
 
 // 4. 反向映射：从DType枚举获取类型名称（可选，调试用）
-inline const char* name_DType(DType dtype) {
+inline const char* name_dtype(DType dtype) {
     switch (dtype) {
         case DType::f32:  return "float32";
         case DType::i32:  return "int32";

@@ -11,6 +11,8 @@
 #include "util/err.hpp"
 #include "util/logger.hpp"
 
+
+
 namespace EC::Device
 {
     
@@ -72,21 +74,71 @@ public:
             cudaMemPoolSetAttribute(mem_pool, cudaMemPoolAttrReleaseThreshold, 0);
         }
 
-        LOG_DEBUG("NVContext: device ", device_prop.name," ,id: " ,device_id," init success | current gpu memory: ",device_prop.totalGlobalMem / (1024.0 * 1024.0 * 1024.0));
+        LOG_INFO("NVContext: device ", device_prop.name," ,id: " ,device_id," init success | current gpu memory: ",device_prop.totalGlobalMem / (1024.0 * 1024.0 * 1024.0));
         return true;
     }
 
-    void* allocate()
+    void* allocate(size_t size,bool use_pool=true,cudaStream_t s = cudaStreamPerThread){
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        if(device_id==-1 || size == 0) return nullptr;
+        cudaSetDevice(device_id);
+        void* ptr = nullptr;
+        if(use_pool && mem_pool != nullptr){
+            cudaMallocFromPoolAsync(&ptr,size,mem_pool,s);
+        }else{
+            cudaMallocAsync(&ptr,size,s);
+        }
+        return ptr;
+    }
+
+    void deallocate(void* ptr){
+        if(ptr == nullptr)return;
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        cudaSetDevice(device_id);
+        cudaFreeAsync(ptr,default_stream);
+    }
+
+    void sync_stream(cudaStream_t s = nullptr){
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        cudaSetDevice(device_id);
+        if(s == nullptr) s = default_stream;
+        cudaStreamSynchronize(s);
+    }
+
+    cudaStream_t create_custom_stream(std::string& name,bool non_blocking = true){
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        if(custom_streams.find(name) != custom_streams.end()) return custom_streams[name];
+        cudaStream_t stream;
+        cudaStreamCreateWithFlags(&stream,non_blocking ? cudaStreamNonBlocking : cudaStreamDefault);
+        custom_streams[name] = stream;
+        return stream;
+    }
+
+    void destroy_custom_stream(const std::string& stream_name) {
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        auto it = custom_streams.find(stream_name);
+        if (it != custom_streams.end()) {
+            cudaStreamDestroy(it->second);
+            custom_streams.erase(it);
+        }
+    }
     
+    ~NVContext(){
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        if(device_id == -1) return;
+        for(auto& [_,stream] : custom_streams)cudaStreamDestroy(stream);
+        custom_streams.clear();
+        device_id=-1;
+    }
 
-
-
-
-
+    NVContext(const NVContext&) = delete;
+    NVContext& operator=(const NVContext&)=delete;
+    NVContext(NVContext&&) = default;
+    NVContext& operator=(NVContext&&) = default;
+private:
+    NVContext() = default;
 
 };
-
-
 
 
 } // namespace EC

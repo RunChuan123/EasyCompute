@@ -14,14 +14,14 @@ struct Buffer{
     size_t nbytes;
     DType dtype;
     Device device;
-    size_t dev_id = 0;
+    bool is_contiguous = true;
     size_t align = 64;
     size_t offset_bytes = 0;
 
     Buffer()=default;
-    explicit Buffer(size_t bytes,DType dt=DType::f32,Device dev=Device::CPU,size_t dev_id = 0,size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){
-        switch (device){
-        case Device::CPU:{
+    explicit Buffer(size_t bytes,DType dt=DType::f32,Device dev=Device::cpu(),size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){
+        switch (device.type()){
+        case DeviceType::CPU:{
 #ifdef __cpp_aligned_new
             ptr = ::operator new(bytes,::std::align_val_t(align));
 #else
@@ -29,7 +29,7 @@ struct Buffer{
 #endif
             if(!ptr) throw ::std::bad_alloc();
         }break;
-        case Device::NV_GPU:{
+        case DeviceType::CUDA:{
             
             break;
         }
