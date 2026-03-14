@@ -4,6 +4,7 @@
 
 namespace EC
 {
+    
 enum class DeviceType :uint8_t{
     CPU=0,
     CUDA,
