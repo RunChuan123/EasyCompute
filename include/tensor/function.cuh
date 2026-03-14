@@ -10,6 +10,7 @@
 #include "device/device.hpp"
 #include "util/logger.hpp"
 #include "util/err.hpp"
+#include "util/check_cuda.cuh"
 
 namespace EC{
 namespace Func{
@@ -99,15 +100,39 @@ private:
     // 流依赖 某stream 依赖的流s
     std::unordered_map<cudaStream_t,std::vector<cudaStream_t>> stream_deps_;
     FunctionManager() = default;
-    bool checkDe
-}
+    bool checkDependencied(const AsyncTask* task);
+    void setStreamDependency(cudaStream_t cur_stream,cudaStream_t dep_stream);
+    cudaEvent_t getStreamDoneEvent(cudaStream_t stream);
 
+public:
+    static FunctionManager& get_instance(){
+        std::lock_guard<std::mutex> lock(mtx_);
+        if(!instance_){
+            instance_.reset(new FunctionManager{});
+        }
+        return *instance_;
+    }
+    AsyncTask* registerTask(const std::string& task_name,
+        FuncType func_type,
+        Priority priority,
+        int order,
+        Device dev,
+        cudaStream_t stream,
+        std::function<bool()> func,
+        const std::vector<AsyncTask*>& dependencies = {});
+    const std::unordered_map<cudaStream_t, std::vector<cudaStream_t>>& getStreamDependencies() const {return stream_deps_;}
+    void executeReadyTasks();
+    void waitAllTasks();
+    void waitTask(const std::string& task_name);
+    bool waitTask(const std::string& task_name, int timeout_ms);
+    bool isTaskDone(const std::string& name);
+    void clearAllTasks();
+    ~FunctionManager(){
+        clearAllTasks();
+    }
+};
 
-
-
-
-
-
-
+std::unique_ptr<FunctionManager> FunctionManager::instance_ = nullptr;
+std::mutex FunctionManager::mtx_;
 }
 } 
