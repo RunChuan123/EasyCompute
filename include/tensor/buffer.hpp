@@ -8,6 +8,7 @@
 #include "util/err.hpp"
 #include "util/check_cuda.cuh"
 #include "device/device.hpp"
+#include "function.cuh"
 #include "device/manager.cuh"
 
 namespace EC {

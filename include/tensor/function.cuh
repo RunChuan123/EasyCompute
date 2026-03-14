@@ -127,6 +127,12 @@ public:
     bool waitTask(const std::string& task_name, int timeout_ms);
     bool isTaskDone(const std::string& name);
     void clearAllTasks();
+    inline bool isTaskCompleted(const std::string& task_name) {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (tasks_.find(task_name) == tasks_.end()) return false;
+        auto& task = tasks_[task_name];
+        return cudaEventQuery(task->end_event) == cudaSuccess;
+    }
     ~FunctionManager(){
         clearAllTasks();
     }
