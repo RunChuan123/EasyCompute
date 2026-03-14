@@ -32,8 +32,12 @@ struct CPUContext {
         return ptr;
     }
 
-    void deallocate(void* ptr){
-        free(ptr);
+    void deallocate(void* ptr,size_t align){
+        #ifdef __cpp_aligned_new
+        ::operator delete(ptr,::std::align_val_t(align));
+        #else
+        std::free(ptr);
+        #endif  
     }
 
     ~CPUContext()=default;

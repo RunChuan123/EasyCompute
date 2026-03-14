@@ -109,6 +109,13 @@ public:
         if(s == nullptr) s = default_stream;
         cudaStreamSynchronize(s);
     }
+    void sync_stream(std::string name){
+        std::lock_guard<std::mutex> lock(ctx_mutex);
+        if(auto it = custom_streams.find(name);it != custom_streams.end()){
+            cudaSetDevice(device_id_);
+            cudaStreamSynchronize(it->second);
+        }
+    }
 
     cudaStream_t create_custom_stream(std::string& name,bool non_blocking = true){
         std::lock_guard<std::mutex> lock(ctx_mutex);

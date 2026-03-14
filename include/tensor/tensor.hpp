@@ -131,9 +131,12 @@ private:
 
     TensorId id_=TensorId{};
     std::shared_ptr<Buffer> data_;
+    // cuda 可以访问这个视图
+    std::shared_ptr<Buffer> tmp_data_;
     Shape shape_ ;
     DType dtype_=DType::f32;
     Device device_=Device::cpu();
+
     bool requires_grad_ = false;
     std::shared_ptr<Tensor> grad_;
     // 计算图使用

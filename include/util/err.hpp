@@ -79,4 +79,5 @@ namespace EC
             err_msg_ = oss.str();
         }
     };
+
 } // namespace EC

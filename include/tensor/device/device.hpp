@@ -33,12 +33,13 @@ struct Device{
     bool is_cuda() const {return type_ == DeviceType::CUDA;}
 
     DeviceType type()const{return type_;}
+    int id()const{return index_;}
 };
 
-struct DeviceContext{
-    virtual ~DeviceContext() = default;
-    virtual Device device() const = 0;
-};
+// struct DeviceContext{
+//     virtual ~DeviceContext() = default;
+//     virtual Device device() const = 0;
+// };
 
 
 } // namespace Ec
