@@ -37,7 +37,7 @@ public:
 
     Tensor()=default;
     Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,
-                    Device dev = Device::cpu(),bool requires_grad = false)
+                    DI dev = DI::cpu(),bool requires_grad = false)
     : id_(make_tensor_id()),shape_(std::move(s)), dtype_(dtype), device_(dev),requires_grad_(requires_grad) {
         // id_.tensor_id = t_local_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
         allocate_();
@@ -52,7 +52,7 @@ public:
 
     Shape getShape() const { return shape_; }
     DType getDtype() const { return dtype_; }
-    Device getDevice() const { return device_; }
+    DI getDevice() const { return device_; }
     size_t numel() const { return shape_.numel(); }
     TensorId id()const{return id_;}
     bool requires_grad() const { return requires_grad_; }
@@ -83,16 +83,16 @@ public:
 
     void print(size_t width = 4,size_t prec = 2)const;
     
-    static Tensor scalar(float value,DType dt=DType::f32, Device dev = Device::cpu());
-    static Tensor vector(std::initializer_list<float> vl,Shape s,DType dt=DType::f32, Device dev = Device::cpu());
-    static Tensor zeros(Shape s,DType dt=DType::f32, Device dev = Device::cpu());
-    static Tensor ones(Shape s,DType dt=DType::f32, Device dev = Device::cpu());
-    static Tensor E(Shape s,DType dt=DType::f32, Device dev = Device::cpu());
-    static Tensor uniform(Shape s, float low = 0.0F, float high = 1.0F,DType dt=DType::f32, Device dev = Device::cpu());
-    static Tensor normal(Shape s, float mean = 0.0F, float stddev = 1.0F,DType dt=DType::f32, Device dev = Device::cpu());
+    static Tensor scalar(float value,DType dt=DType::f32, DI dev = DI::cpu());
+    static Tensor vector(std::initializer_list<float> vl,Shape s,DType dt=DType::f32, DI dev = DI::cpu());
+    static Tensor zeros(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
+    static Tensor ones(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
+    static Tensor E(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
+    static Tensor uniform(Shape s, float low = 0.0F, float high = 1.0F,DType dt=DType::f32, DI dev = DI::cpu());
+    static Tensor normal(Shape s, float mean = 0.0F, float stddev = 1.0F,DType dt=DType::f32, DI dev = DI::cpu());
     static Tensor likes(Tensor& rhs,float v=0.0f);
-    static Tensor Empty(Shape s,DType dt=DType::f32, Device dev = Device::cpu());
-    // static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, Device dev = Device::cpu(), bool req_grad=true);// ?
+    static Tensor Empty(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
+    // static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=true);// ?
     // 上三角，下三角，等等
 
     inline Tensor view(Shape s) const;
@@ -118,7 +118,7 @@ public:
     void copy_(Tensor& src);
     std::vector<Tensor> split(size_t split_size,size_t dim);
     std::vector<Tensor> chunk(size_t chunks,size_t dim);
-    void to(Device dev);
+    void to(DI dev);
     void to(DType dt);
 
 
@@ -130,7 +130,7 @@ private:
     std::shared_ptr<Buffer> tmp_data_;
     Shape shape_ ;
     DType dtype_=DType::f32;
-    Device device_=Device::cpu();
+    DI device_=DI::cpu();
 
     bool requires_grad_ = false;
     std::shared_ptr<Tensor> grad_;
@@ -144,7 +144,7 @@ private:
 struct TensorMeta{
     Shape shape;
     DType dtype;
-    Device device;
+    DI device;
     bool requires_grad;
 };
 

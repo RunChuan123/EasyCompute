@@ -18,17 +18,26 @@ namespace EC{
 namespace Func{
 
     
-enum class FuncType{
-    Memcpy_H2D,
-    Memcpy_D2H,
-    Memcpy_D2D,
-    Compute_Unary, // softmax...
-    Compute_Binary, // add... 
-    Compute_Ternary, // attention...
-    Compute, // symbol
-    MemFree,
-    Custom, 
+enum class TaskType{
+    Memcpy,
+    Compute,
+    Free,
+    Barrier,
+    Custom,
 };
+
+// struct MemcpyTaskDesc {
+//     void* dst;
+//     const void* src;
+//     size_t bytes;
+//     Device dst_device;
+//     Device src_device;
+// };
+
+// struct KernelTaskDesc {
+//     std::string op_name;
+//     std::vector<void*> args;
+// };
 
 enum class Priority{
     High=0,
@@ -39,11 +48,11 @@ enum class Priority{
 // 任务单元
 struct AsyncTask{
     std::string task_name;
-    FuncType func_type;
+    TaskType func_type;
     Priority priority;
     int order; // 相同优先级，order 小的先执行；
 
-    Device device;
+    DI device;
     Dev::StreamHandle stream;
     // 等待这些任务执行完毕后才可执行
     std::vector<AsyncTask*> dependencies;
@@ -101,11 +110,11 @@ private:
     // 已提交的任务
     std::unordered_map<std::string,std::unique_ptr<AsyncTask>> tasks_;
     // 流依赖 某stream 依赖的流s
-    std::unordered_map<cudaStream_t,std::vector<cudaStream_t>> stream_deps_;
+    std::unordered_map<Dev::StreamHandle,std::vector<Dev::StreamHandle>> stream_deps_;
     AsyncTaskExecutor() = default;
     bool checkDependencied(const AsyncTask* task);
-    void setStreamDependency(cudaStream_t cur_stream,cudaStream_t dep_stream);
-    cudaEvent_t getStreamDoneEvent(cudaStream_t stream);
+    void setStreamDependency(Dev::StreamHandle cur_stream,Dev::StreamHandle dep_stream);
+    Dev::EventHandle getStreamDoneEvent(Dev::StreamHandle stream);
 
 public:
     static AsyncTaskExecutor& get_instance(){
@@ -116,26 +125,26 @@ public:
         return *instance_;
     }
     AsyncTask* registerTask(const std::string& task_name,
-        FuncType func_type,
+        TaskType func_type,
         Priority priority,
         int order,
-        Device dev,
-        cudaStream_t stream,
+        DI dev,
+        Dev::StreamHandle stream,
         std::function<bool()> func,
         const std::vector<AsyncTask*>& dependencies = {});
-    const std::unordered_map<cudaStream_t, std::vector<cudaStream_t>>& getStreamDependencies() const {return stream_deps_;}
+    const std::unordered_map<Dev::StreamHandle, std::vector<Dev::StreamHandle>>& getStreamDependencies() const {return stream_deps_;}
     void executeReadyTasks();
     void waitAllTasks();
     void waitTask(const std::string& task_name);
     bool waitTask(const std::string& task_name, int timeout_ms);
     bool isTaskDone(const std::string& name);
     void clearAllTasks();
-    inline bool isTaskCompleted(const std::string& task_name) {
-        std::lock_guard<std::mutex> lock(mtx_);
-        if (tasks_.find(task_name) == tasks_.end()) return false;
-        auto& task = tasks_[task_name];
-        return cudaEventQuery(task->end_event) == cudaSuccess;
-    }
+    // inline bool isTaskCompleted(const std::string& task_name) {
+    //     std::lock_guard<std::mutex> lock(mtx_);
+    //     if (tasks_.find(task_name) == tasks_.end()) return false;
+    //     auto& task = tasks_[task_name];
+    //     return cudaEventQuery(task->end_event) == cudaSuccess;
+    // }
     ~AsyncTaskExecutor(){
         clearAllTasks();
     }

@@ -18,13 +18,13 @@ struct Buffer{
     void* ptr = nullptr;
     size_t nbytes;
     DType dtype;
-    Device device;
+    DI device;
     bool is_contiguous = true;
     size_t align = 64;
     size_t offset_bytes = 0;
 
     Buffer()=default;
-    explicit Buffer(size_t bytes,DType dt=DType::f32,Device dev=Device::cpu(),size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){
+    explicit Buffer(size_t bytes,DType dt=DType::f32,DI dev=DI::cpu(),size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){
         switch (device.type()){
         case DeviceType::CPU:{
 #ifdef __cpp_aligned_new

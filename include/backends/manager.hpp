@@ -3,42 +3,92 @@
 #include <memory>
 #include <unordered_map>
 
-
-
 #include "tensor/device.hpp"
 #include "abstract.hpp"
+#include "device_runtime.hpp"
 
 
 namespace EC{
 namespace Dev{
     
-class DeviceManager {
+
+struct DeviceManager {
 public:
-    static DeviceManager& instance();
+    static DeviceManager& instance() {
+        static DeviceManager dm;
+        return dm;
+    }
 
-    void registerRuntime(std::unique_ptr<IDeviceRuntime> runtime);
+    void registerRuntime(std::unique_ptr<IDeviceRuntime> runtime) {
+        runtimes_[runtime->device()] = std::move(runtime);
+    }
 
-    IDeviceRuntime* getRuntime(Device dev);
-    const IDeviceRuntime* getRuntime(Device dev) const;
+    IDeviceRuntime& runtime(DI dev) {
+        auto it = runtimes_.find(dev);
+        if (it == runtimes_.end()) {
+            throw std::runtime_error("runtime not registered");
+        }
+        return *(it->second);
+    }
 
-    bool isAvailable(Device dev) const;
-    int deviceCount(DeviceType type) const;
+    void* allocate(DI dev, size_t bytes, MemoryKind kind) {
+        return runtime(dev).allocate(dev, bytes, kind);
+    }
 
-    void* allocate(Device dev, size_t bytes, MemoryType kind = MemoryType::Device);
-    void deallocate(Device dev, void* ptr, MemoryType kind = MemoryType::Device);
+    void deallocate(DI dev, void* ptr,  MemoryKind kind) {
+        runtime(dev).deallocate(dev, ptr, kind);
+    }
 
-    StreamHandle createStream(Device dev, int priority = 0);
-    EventHandle createEvent(Device dev, bool timing = false);
+    void* allocateAsync(DI dev, size_t bytes, MemoryKind kind, StreamHandle stream) {
+        return runtime(dev).allocateAsync(dev, bytes, kind, stream);
+    }
 
-    void synchronize(Device dev);
-    void synchronize(StreamHandle stream);
-    void synchronize(EventHandle event);
+    void deallocateAsync(DI dev, void* ptr, MemoryKind kind, StreamHandle stream) {
+        runtime(dev).deallocateAsync(dev, ptr, kind, stream);
+    }
+
+    StreamHandle createStream(DI dev, int priority = 0) {
+        return runtime(dev).createStream(dev, priority);
+    }
+
+    EventHandle createEvent(DI dev, bool timing = false) {
+        return runtime(dev).createEvent(dev, timing);
+    }
+
+    void recordEvent(EventHandle ev, StreamHandle stream) {
+        runtime(ev.device()).recordEvent(ev, stream);
+    }
+
+    bool queryEvent(EventHandle ev) {
+        return runtime(ev.device()).queryEvent(ev);
+    }
+
+    void waitEvent(StreamHandle stream, EventHandle ev) {
+        runtime(stream.device()).waitEvent(stream, ev);
+    }
+
+    void memcpyAsync(void* dst, DI dst_dev,
+                     const void* src, DI src_dev,
+                     size_t bytes, StreamHandle stream) {
+        runtime(dst_dev).memcpyAsync(dst, dst_dev, src, src_dev, bytes, stream);
+    }
+
+    void synchronize(StreamHandle stream) {
+        runtime(stream.device()).synchronizeStream(stream);
+    }
+
+    void synchronize(EventHandle ev) {
+        runtime(ev.device()).synchronizeEvent(ev);
+    }
+
+    void synchronize(DI dev) {
+        runtime(dev).synchronizeDevice(dev);
+    }
 
 private:
-    std::unordered_map<Device, std::unique_ptr<IDeviceRuntime>> runtimes_;
+    DeviceManager() = default;
+    std::unordered_map<DI, std::unique_ptr<IDeviceRuntime>> runtimes_;
 };
-
-
 }
 }
 
