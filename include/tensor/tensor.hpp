@@ -13,27 +13,22 @@
 
 namespace EC::AT{
 
-struct TensorId{
-    // uint64_t pid;
-    // uint64_t tid;
-    uint64_t tensor_id = -1;
-    uint64_t dev_id=-1;
-    bool operator==(const TensorId& rhs)const{
-        return 
-            // pid == rhs.pid && 
-            // tid == rhs.tid &&
-            dev_id == rhs.dev_id &&
-            tensor_id == rhs.tensor_id;
-    }
+std::atomic<uint64_t> g_tensor_id_counter{1}; // 0 留给 invalid 也行
 
-    std::string to_string() const{
-        // return std::to_string(pid) + "_" + std::to_string(tid) + "_" + std::to_string(dev_id) + "_" + std::to_string(local_id);
-        return std::to_string(dev_id) + "_" + std::to_string(tensor_id);
-    
-    }
+struct TensorId {
+    uint64_t value = invalid();
+    static constexpr uint64_t invalid() {return std::numeric_limits<uint64_t>::max();}
+    bool is_valid() const {return value != invalid();}
+    bool operator==(const TensorId& rhs) const {return value == rhs.value;}
+    bool operator!=(const TensorId& rhs) const {return !(*this == rhs);}
+    std::string to_string() const {return std::to_string(value);}
 };
 
-thread_local std::atomic<uint64_t> t_local_tensor_id_counter(0);
+inline TensorId make_tensor_id() {
+    TensorId id;
+    id.value = g_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
+    return id;
+}
 
 using ValueId = int32_t;
 
@@ -43,8 +38,8 @@ public:
     Tensor()=default;
     Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,
                     Device dev = Device::cpu(),bool requires_grad = false)
-    : id_(TensorId{}),shape_(std::move(s)), dtype_(dtype), device_(dev),requires_grad_(requires_grad) {
-        id_.tensor_id = t_local_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
+    : id_(make_tensor_id()),shape_(std::move(s)), dtype_(dtype), device_(dev),requires_grad_(requires_grad) {
+        // id_.tensor_id = t_local_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
         allocate_();
         fill_(value);
     }
@@ -131,7 +126,7 @@ private:
 
     TensorId id_=TensorId{};
     std::shared_ptr<Buffer> data_;
-    // cuda 可以访问这个视图
+    // 临时数据视图，给打印看
     std::shared_ptr<Buffer> tmp_data_;
     Shape shape_ ;
     DType dtype_=DType::f32;
@@ -146,4 +141,20 @@ private:
 
 };
 
+struct TensorMeta{
+    Shape shape;
+    DType dtype;
+    Device device;
+    bool requires_grad;
+};
+
+}
+
+namespace std {
+template <>
+struct hash<EC::AT::TensorId> {
+    size_t operator()(const EC::AT::TensorId& id) const noexcept {
+        return std::hash<uint64_t>{}(id.value);
+    }
+};
 }

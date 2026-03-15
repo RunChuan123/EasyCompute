@@ -8,6 +8,7 @@ namespace EC
 enum class DeviceType :uint8_t{
     CPU=0,
     CUDA,
+    ASCEND,
 
     NumDevice
 };
@@ -32,6 +33,8 @@ struct Device{
     }
     bool is_cpu() const {return type_ == DeviceType::CPU;}
     bool is_cuda() const {return type_ == DeviceType::CUDA;}
+    bool is_ascend() const { return type_ == DeviceType::ASCEND; }
+
 
     DeviceType type()const{return type_;}
     int id()const{return index_;}

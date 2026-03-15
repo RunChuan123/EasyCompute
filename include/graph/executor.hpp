@@ -12,6 +12,11 @@ struct RunResult{
     std::vector<AT::Tensor> outputs;
 };
 
+std::unordered_map<ValueId, AT::Tensor> make_feeds(
+    const GraphModule& mod,
+    const std::unordered_map<std::string, AT::Tensor>& named_inputs
+);
+
 struct Executor{
     RunResult run(const Graph& g,const std::unordered_map<ValueId,AT::Tensor>& feeds)const;
 };

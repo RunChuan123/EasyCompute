@@ -22,6 +22,7 @@ struct TensorMeta{
     Shape shape;
     DType dtype;
     Device device;
+    bool requires_grad;
 };
 
 struct Value{
