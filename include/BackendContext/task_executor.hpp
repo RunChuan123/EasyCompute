@@ -1,13 +1,15 @@
 #pragma once
 
-#include <cuda_runtime.h>
+
 #include <functional>
 #include <vector>
 #include <unordered_map>
 #include <queue>
 #include <string>
 
-#include "device/device.hpp"
+#include "manager.hpp"
+#include "abstract.hpp"
+#include "tensor/device.hpp"
 #include "util/logger.hpp"
 #include "util/err.hpp"
 #include "util/check_cuda.cuh"
@@ -42,21 +44,22 @@ struct AsyncTask{
     int order; // 相同优先级，order 小的先执行；
 
     Device device;
-    cudaStream_t stream = nullptr;
+    Dev::StreamHandle stream;
     // 等待这些任务执行完毕后才可执行
     std::vector<AsyncTask*> dependencies;
+
     std::function<bool()> func;
 
-    cudaEvent_t start_event = nullptr;
-    cudaEvent_t end_event = nullptr;
+    Dev::EventHandle start_event;
+    Dev::EventHandle end_event;
 
     AsyncTask(){
-        cudaEventCreate(&start_event);
-        cudaEventCreate(&end_event);
+        // cudaEventCreate(&start_event);
+        // cudaEventCreate(&end_event);
     }
     ~AsyncTask(){
-        if (start_event) CUDA_CHECK(cudaEventDestroy(start_event));
-        if (end_event) CUDA_CHECK(cudaEventDestroy(end_event));
+        // if (start_event) cudaEventDestroy(start_event);
+        // if (end_event)cudaEventDestroy(end_event);
     }
     AsyncTask(const AsyncTask&)=delete;
     AsyncTask& operator=(const AsyncTask&) = delete;
@@ -75,8 +78,8 @@ struct AsyncTask{
         func = std::move(o.func);
         start_event = o.start_event;
         end_event = o.end_event;
-        o.start_event = nullptr;
-        o.end_event = nullptr;
+        o.start_event.reset();
+        o.end_event.reset();
         return *this;
     }
 };
@@ -89,9 +92,9 @@ struct TaskComparator{
     }
 };
 
-struct FunctionManager{
+struct AsyncTaskExecutor{
 private:
-    static std::unique_ptr<FunctionManager> instance_;
+    static std::unique_ptr<AsyncTaskExecutor> instance_;
     static std::mutex mtx_;
     // 任务队列
     std::priority_queue<AsyncTask*,std::vector<AsyncTask*>,TaskComparator> task_queue_;
@@ -99,16 +102,16 @@ private:
     std::unordered_map<std::string,std::unique_ptr<AsyncTask>> tasks_;
     // 流依赖 某stream 依赖的流s
     std::unordered_map<cudaStream_t,std::vector<cudaStream_t>> stream_deps_;
-    FunctionManager() = default;
+    AsyncTaskExecutor() = default;
     bool checkDependencied(const AsyncTask* task);
     void setStreamDependency(cudaStream_t cur_stream,cudaStream_t dep_stream);
     cudaEvent_t getStreamDoneEvent(cudaStream_t stream);
 
 public:
-    static FunctionManager& get_instance(){
+    static AsyncTaskExecutor& get_instance(){
         std::lock_guard<std::mutex> lock(mtx_);
         if(!instance_){
-            instance_.reset(new FunctionManager{});
+            instance_.reset(new AsyncTaskExecutor{});
         }
         return *instance_;
     }
@@ -133,12 +136,12 @@ public:
         auto& task = tasks_[task_name];
         return cudaEventQuery(task->end_event) == cudaSuccess;
     }
-    ~FunctionManager(){
+    ~AsyncTaskExecutor(){
         clearAllTasks();
     }
 };
 
-std::unique_ptr<FunctionManager> FunctionManager::instance_ = nullptr;
-std::mutex FunctionManager::mtx_;
+std::unique_ptr<AsyncTaskExecutor> AsyncTaskExecutor::instance_ = nullptr;
+std::mutex AsyncTaskExecutor::mtx_;
 }
 } 
