@@ -18,15 +18,15 @@ public:
     virtual void setCurrentDevice(DI dev) = 0;
     virtual void synchronizeDevice(DI dev) = 0;
 
-    virtual void* allocate(DI dev, size_t bytes, MemoryKind kind) = 0;
-    virtual void deallocate(DI dev, void* ptr, MemoryKind kind) = 0;
+    virtual void* allocate(DI dev, size_t bytes, MemoryType kind) = 0;
+    virtual void deallocate(DI dev, void* ptr, MemoryType kind) = 0;
 
-    virtual void* allocateAsync(DI dev, size_t bytes, MemoryKind kind, StreamHandle stream) {
+    virtual void* allocateAsync(DI dev, size_t bytes, MemoryType kind, StreamHandle stream) {
         (void)stream;
         return allocate(dev, bytes, kind);
     }
 
-    virtual void deallocateAsync(DI dev, void* ptr, MemoryKind kind, StreamHandle stream) {
+    virtual void deallocateAsync(DI dev, void* ptr, MemoryType kind, StreamHandle stream) {
         (void)stream;
         deallocate(dev, ptr, kind);
     }

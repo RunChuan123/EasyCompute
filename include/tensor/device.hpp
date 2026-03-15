@@ -37,6 +37,7 @@ struct MemoryKind{
 
     DeviceType type()const{return type_;}
     int id()const{return index_;}
+    MemoryType memtype()const{return memtype_;}
 };
 
 struct DeviceIdentification{
@@ -58,11 +59,6 @@ struct DeviceIdentification{
 };
 
 using DI = DeviceIdentification;
-
-// struct DeviceContext{
-//     virtual ~DeviceContext() = default;
-//     virtual Device device() const = 0;
-// };
+}
 
 
-} // namespace Ec

@@ -5,9 +5,11 @@
 #include <vector>
 #include <unordered_map>
 #include <queue>
+#include <memory>
 #include <string>
+#include <condition_variable>
 
-#include "manager.hpp"
+#include "device_manager.hpp"
 #include "abstract.hpp"
 #include "tensor/device.hpp"
 #include "util/logger.hpp"
@@ -15,7 +17,7 @@
 #include "util/check_cuda.cuh"
 
 namespace EC{
-namespace Func{
+namespace Task{
 
     
 enum class TaskType{
@@ -26,18 +28,6 @@ enum class TaskType{
     Custom,
 };
 
-// struct MemcpyTaskDesc {
-//     void* dst;
-//     const void* src;
-//     size_t bytes;
-//     Device dst_device;
-//     Device src_device;
-// };
-
-// struct KernelTaskDesc {
-//     std::string op_name;
-//     std::vector<void*> args;
-// };
 
 enum class Priority{
     High=0,
@@ -45,31 +35,36 @@ enum class Priority{
     Low
 };
 
+enum class TaskStatus{
+    Created,
+    Ready,
+    Submitted,
+    Finished,
+    Failed,
+    Cancelled,
+};
+
 // 任务单元
 struct AsyncTask{
     std::string task_name;
-    TaskType func_type;
-    Priority priority;
+    TaskType task_type{TaskType::Custom};
+    Priority priority{Priority::Normal};
     int order; // 相同优先级，order 小的先执行；
 
     DI device;
     Dev::StreamHandle stream;
-    // 等待这些任务执行完毕后才可执行
+    // 任务依赖前驱和后继
     std::vector<AsyncTask*> dependencies;
-
+    std::vector<AsyncTask*> dependents;
     std::function<bool()> func;
-
+    // 剩余多少依赖未完成
+    std::atomic<int> pending_dependencies{0};
     Dev::EventHandle start_event;
     Dev::EventHandle end_event;
+    std::atomic<TaskStatus> status{TaskStatus::Created};
 
-    AsyncTask(){
-        // cudaEventCreate(&start_event);
-        // cudaEventCreate(&end_event);
-    }
-    ~AsyncTask(){
-        // if (start_event) cudaEventDestroy(start_event);
-        // if (end_event)cudaEventDestroy(end_event);
-    }
+    AsyncTask()=default;
+    ~AsyncTask()=default;
     AsyncTask(const AsyncTask&)=delete;
     AsyncTask& operator=(const AsyncTask&) = delete;
 
@@ -78,17 +73,20 @@ struct AsyncTask{
     }
     AsyncTask& operator=(AsyncTask&& o) noexcept{
         task_name = std::move(o.task_name);
-        func_type = o.func_type;
+        task_type = o.task_type;
         priority = o.priority;
         order = o.order;
         device = o.device;
         stream = o.stream;
         dependencies = std::move(o.dependencies);
+        dependents = std::move(o.dependents);
+        pending_dependencies.store(o.pending_dependencies.load(std::memory_order_relaxed),std::memory_order_relaxed);
         func = std::move(o.func);
         start_event = o.start_event;
         end_event = o.end_event;
         o.start_event.reset();
         o.end_event.reset();
+        o.status.store(TaskStatus::Cancelled, std::memory_order_relaxed);
         return *this;
     }
 };
@@ -103,54 +101,67 @@ struct TaskComparator{
 
 struct AsyncTaskExecutor{
 private:
-    static std::unique_ptr<AsyncTaskExecutor> instance_;
-    static std::mutex mtx_;
-    // 任务队列
-    std::priority_queue<AsyncTask*,std::vector<AsyncTask*>,TaskComparator> task_queue_;
+    using ReadyQueue = std::priority_queue<AsyncTask*,std::vector<AsyncTask*>,TaskComparator>;
+    ReadyQueue ready_queue_;
+    inline static std::unique_ptr<AsyncTaskExecutor> instance_ = nullptr;
+    inline static std::mutex instance_mtx_;
+    mutable std::mutex mtx_;
+    std::condition_variable cv_;
     // 已提交的任务
     std::unordered_map<std::string,std::unique_ptr<AsyncTask>> tasks_;
-    // 流依赖 某stream 依赖的流s
-    std::unordered_map<Dev::StreamHandle,std::vector<Dev::StreamHandle>> stream_deps_;
+    std::atomic<std::uint64_t> total_tasks_{0};
+    std::atomic<std::uint64_t> finished_tasks_{0};
+    std::atomic<bool> stop_{false};
     AsyncTaskExecutor() = default;
-    bool checkDependencied(const AsyncTask* task);
-    void setStreamDependency(Dev::StreamHandle cur_stream,Dev::StreamHandle dep_stream);
-    Dev::EventHandle getStreamDoneEvent(Dev::StreamHandle stream);
-
+private:
+    void validateRegisterInputsUnlocked(const std::string& task_name,const std::vector<AsyncTask*>& dependencies);
+    bool wouldIntroduceCycleUnlocked(const std::vector<AsyncTask*>& dependencies,const AsyncTask* new_task) const;
+    bool isReachableUnlocked(const AsyncTask* src, const AsyncTask* dst) const;
+    void enqueueReadyUnlocked(AsyncTask* task);
+    void markTaskFinishedUnlocked(AsyncTask* task);
+    void markTaskFailedUnlocked(AsyncTask* task);
+    void notifyDependentsUnlocked(AsyncTask* task);
+    void ensureTaskEventsCreated(AsyncTask* task);
+    bool executeTaskOutsideLock(AsyncTask* task);
+    AsyncTask* popReadyTaskUnlocked();
 public:
-    static AsyncTaskExecutor& get_instance(){
-        std::lock_guard<std::mutex> lock(mtx_);
-        if(!instance_){
-            instance_.reset(new AsyncTaskExecutor{});
+    ~AsyncTaskExecutor();
+    AsyncTaskExecutor(const AsyncTaskExecutor&) = delete;
+    AsyncTaskExecutor& operator=(const AsyncTaskExecutor&) = delete;
+    static AsyncTaskExecutor& get_instance() {
+        std::lock_guard<std::mutex> lock(instance_mtx_);
+        if (!instance_) {
+            instance_ = std::unique_ptr<AsyncTaskExecutor>(new AsyncTaskExecutor());
         }
         return *instance_;
     }
+
     AsyncTask* registerTask(const std::string& task_name,
-        TaskType func_type,
-        Priority priority,
-        int order,
-        DI dev,
-        Dev::StreamHandle stream,
-        std::function<bool()> func,
-        const std::vector<AsyncTask*>& dependencies = {});
-    const std::unordered_map<Dev::StreamHandle, std::vector<Dev::StreamHandle>>& getStreamDependencies() const {return stream_deps_;}
+                            TaskType task_type,
+                            Priority priority,
+                            int order,
+                            DI dev,
+                            Dev::StreamHandle stream,
+                            std::function<bool()> func,
+                            const std::vector<AsyncTask*>& dependencies = {});
+
     void executeReadyTasks();
-    void waitAllTasks();
+    void executeUntilIdle();
+
     void waitTask(const std::string& task_name);
     bool waitTask(const std::string& task_name, int timeout_ms);
-    bool isTaskDone(const std::string& name);
+
+    void waitAllTasks();
+
+    bool isTaskDone(const std::string& task_name);
+    bool isTaskCompleted(const std::string& task_name);
+    bool isTaskFailed(const std::string& task_name);
+
     void clearAllTasks();
-    // inline bool isTaskCompleted(const std::string& task_name) {
-    //     std::lock_guard<std::mutex> lock(mtx_);
-    //     if (tasks_.find(task_name) == tasks_.end()) return false;
-    //     auto& task = tasks_[task_name];
-    //     return cudaEventQuery(task->end_event) == cudaSuccess;
-    // }
-    ~AsyncTaskExecutor(){
-        clearAllTasks();
-    }
+
+    std::size_t numTasks() const;
+    std::size_t numReadyTasks() const;
 };
 
-std::unique_ptr<AsyncTaskExecutor> AsyncTaskExecutor::instance_ = nullptr;
-std::mutex AsyncTaskExecutor::mtx_;
 }
 } 

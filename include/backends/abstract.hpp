@@ -14,10 +14,11 @@ public:
     void set(void* impl_ptr=nullptr){impl_ = impl_ptr;}
     void reset(){impl_ = nullptr;}
     bool is_default();
-    bool is_blockind();
+    bool is_blocking();
     void* impl() const { return impl_; }
     DI device() const { return device_; }
     explicit operator bool() const { return impl_ != nullptr; }
+    bool valid() const { return impl_ != nullptr; }
 
 private:
     void* impl_{nullptr};
@@ -34,6 +35,7 @@ public:
     void* impl() const { return impl_; }
     DI device() const { return device_; }
     explicit operator bool() const { return impl_ != nullptr; }
+    bool valid() const { return impl_ != nullptr; }
 
 private:
     void* impl_{nullptr};
