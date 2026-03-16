@@ -54,8 +54,8 @@ struct AsyncTask{
     DI device;
     Dev::StreamHandle stream;
     // 任务依赖前驱和后继
-    std::vector<AsyncTask*> dependencies;
-    std::vector<AsyncTask*> dependents;
+    std::vector<AsyncTask*> dependencies; // 当前任务依赖的任务
+    std::vector<AsyncTask*> dependents; // 依赖当前任务的任务
     std::function<bool()> func;
     // 剩余多少依赖未完成
     std::atomic<int> pending_dependencies{0};

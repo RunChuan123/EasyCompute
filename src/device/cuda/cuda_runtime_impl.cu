@@ -1,7 +1,7 @@
-#include "backends/cuda/cuda_runtime.cuh"
-
 #ifdef EC_ENABLE_CUDA
 
+
+#include "backends/cuda/cuda_runtime.cuh"
 #include <cuda_runtime.h>
 #include <stdexcept>
 

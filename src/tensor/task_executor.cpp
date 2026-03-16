@@ -30,6 +30,9 @@ void AsyncTaskExecutor::validateRegisterInputsUnlocked(
     }
 }
 
+/**
+ * 从 src 到 dst
+ */
 bool AsyncTaskExecutor::isReachableUnlocked(const AsyncTask* src, const AsyncTask* dst) const {
     if (src == nullptr || dst == nullptr) return false;
     if (src == dst) return true;

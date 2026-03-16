@@ -63,6 +63,10 @@ public:
         return runtime(ev.device().type()).queryEvent(ev);
     }
 
+    void destroyEvent(EventHandle ev) {
+        return runtime(ev.device().type()).destroyEvent(ev);
+    }
+
     void waitEvent(StreamHandle stream, EventHandle ev) {
         runtime(stream.device().type()).waitEvent(stream, ev);
     }

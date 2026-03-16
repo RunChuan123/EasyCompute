@@ -8,20 +8,31 @@
 #include "util/err.hpp"
 #include "util/check_cuda.cuh"
 #include "device.hpp"
-#include "function.cuh"
-#include "device/manager.cuh"
+
 
 namespace EC {
+
+struct BufferDesc{
+    size_t nbytes = 0;
+    DType dtype = DType::f32;
+    DI device = DI::cpu();
+    bool is_contituous = true;
+    size_t align = 64;
+    size_t offset_bytes = 0;
+}
 
 // TODO : check memory status if valid;
 struct Buffer{
     void* ptr = nullptr;
-    size_t nbytes;
-    DType dtype;
-    DI device;
-    bool is_contiguous = true;
-    size_t align = 64;
-    size_t offset_bytes = 0;
+    // size_t nbytes;
+    // DType dtype = DType::f32;
+    // DI device = DI::cpu();
+    // bool is_contiguous = true;
+    // size_t align = 64;
+    // size_t offset_bytes = 0;
+    BufferDesc desc;
+    bool owns_memorys = false;
+    bool allocated() const{return ptr != nullptr;}
 
     Buffer()=default;
     explicit Buffer(size_t bytes,DType dt=DType::f32,DI dev=DI::cpu(),size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){

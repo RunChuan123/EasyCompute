@@ -1,4 +1,4 @@
-#define EC_ENABLE_CUDA 
+
 #ifdef EC_ENABLE_CUDA
 
 #include <cuda_runtime.h>

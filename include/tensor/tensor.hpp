@@ -32,13 +32,13 @@ inline TensorId make_tensor_id() {
 
 using ValueId = int32_t;
 
-struct Tensor{
+struct Tensor : std::enable_shared_from_this<Tensor> {
 public:
 
     Tensor()=default;
     Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,
                     DI dev = DI::cpu(),bool requires_grad = false)
-    : id_(make_tensor_id()),shape_(std::move(s)), dtype_(dtype), device_(dev),requires_grad_(requires_grad) {
+    : id_(make_tensor_id()) {
         // id_.tensor_id = t_local_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
         allocate_();
         fill_(value);
@@ -126,14 +126,10 @@ private:
 
     TensorId id_=TensorId{};
     std::shared_ptr<Buffer> data_;
-    // 临时数据视图，给打印看
-    std::shared_ptr<Buffer> tmp_data_;
-    Shape shape_ ;
-    DType dtype_=DType::f32;
-    DI device_=DI::cpu();
-
-    bool requires_grad_ = false;
+    std::shared_ptr<Buffer> tmp_data_;// 临时数据视图，给打印看
     std::shared_ptr<Tensor> grad_;
+
+    TensorMeta meta;
     // 计算图使用
     std::optional<ValueId> sym_;
     void allocate_();
@@ -145,7 +141,11 @@ struct TensorMeta{
     Shape shape;
     DType dtype;
     DI device;
-    bool requires_grad;
+    bool is_contiguous{true};
+    bool requires_grad{false};
+    size_t numel() const {return shape.numel();}
+    size_t itemsize() const {return size_dtype(dtype);}
+    size_t nbytes() const {return numel() * itemsize();}
 };
 
 }
