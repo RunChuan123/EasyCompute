@@ -177,17 +177,14 @@ Tensor Tensor::normal(Shape s, float mean , float stddev,DType dt, Device dev){
 
 
 void Tensor::allocate_(){
-    switch (device_.type()){
-    case DeviceType::CPU :
-        /* code */
-        break;
-    
-    default:
-        break;
-    }
+    meta.shape = shape_;
+    meta.dtype = dtype_;
+    meta.device = device_;
+    meta.is_contiguous = true;
+    meta.requires_grad = requires_grad_;
 
-    size_t bytes = size() * size_dtype(dtype_);
-    data_ = std::make_shared<Buffer>(bytes,dtype_,device);
+    data_ = Buffer::make(meta.nbytes(), meta.dtype, meta.device);
+
 
 }
 void Tensor::fill_(float value){

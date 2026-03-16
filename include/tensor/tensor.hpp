@@ -36,13 +36,18 @@ struct Tensor : std::enable_shared_from_this<Tensor> {
 public:
 
     Tensor()=default;
+
     Tensor(Shape s, float value = 0.0f, DType dtype=DType::f32,
-                    DI dev = DI::cpu(),bool requires_grad = false)
+       DI dev = DI::cpu(), bool requires_grad = false)
     : id_(make_tensor_id()) {
-        // id_.tensor_id = t_local_tensor_id_counter.fetch_add(1, std::memory_order_relaxed);
-        allocate_();
-        fill_(value);
-    }
+    meta.shape = std::move(s);
+    meta.dtype = dtype;
+    meta.device = dev;
+    meta.is_contiguous = true;
+    meta.requires_grad = requires_grad;
+    allocate_();
+    fill_(value);
+}
     
     Tensor(const Tensor&) = default;
     Tensor(Tensor&&) noexcept = default;
@@ -50,36 +55,39 @@ public:
     Tensor& operator=(Tensor&&) noexcept = default;
     ~Tensor() = default;
 
-    Shape getShape() const { return shape_; }
-    DType getDtype() const { return dtype_; }
-    DI getDevice() const { return device_; }
-    size_t numel() const { return shape_.numel(); }
+    Shape getShape() const { return meta.shape; }
+    DType getDtype() const { return meta.dtype; }
+    DI getDevice() const { return meta.device; }
+    size_t numel() const { return meta.numel(); }
+    bool requires_grad() const { return meta.requires_grad; }
     TensorId id()const{return id_;}
-    bool requires_grad() const { return requires_grad_; }
     bool is_symbolic() const {return sym_.has_value();}
     int32_t sym() const {return sym_.value(); }
     inline size_t offset_bytes() const { return data_->offset_bytes; }
     bool is_contiguous()const{return data_->is_contiguous;}
-    std::vector<size_t> strides()const{return make_strides(shape_);}
+    std::vector<size_t> strides()const{return make_strides(meta.shape);}
+    inline void set_requires_grad(bool i) { meta.requires_grad = i; }
     template<typename T>
     T& operator[](size_t index);
     template<typename T>
     const T& operator[](size_t index) const;
 
     template<typename T>
-    inline T* data_ptr(){return static_cast<T*>(data_->data_ptr());}
+    inline T* data_ptr(){return data_? static_cast<T*>(data_->data_ptr()) : nullptr;}
     template<typename T>
-    inline const T* data_ptr()const{return static_cast<const T*>(data_->data_ptr());}
-    inline const Buffer* buffer_ptr()const{return data_.get();}
+    inline const T* data_ptr()const{return data_? static_cast<const T*>(data_->data_ptr() : nullptr);}
+
+    inline const Buffer* buffer_ptr() const { return data_.get(); }
+    inline std::shared_ptr<Buffer> buffer() const { return data_; }
     
     inline bool empty()const{return !data_;}
-    inline size_t size()const{return shape_.numel();}
-    inline size_t rank()const{return shape_.rank();}
+    inline size_t size()const{return meta.shape.numel();}
+    inline size_t rank()const{return meta.shape.rank();}
     
-    inline bool is_scalar() const { return shape_.is_scalar(); }
-    inline bool is_vector() const { return shape_.is_vector(); }
-    inline bool is_matrix() const { return shape_.is_matrix(); }
-    inline bool is_square() const { return shape_.is_square(); }
+    inline bool is_scalar() const { return meta.shape.is_scalar(); }
+    inline bool is_vector() const { return meta.shape.is_vector(); }
+    inline bool is_matrix() const { return meta.shape.is_matrix(); }
+    inline bool is_square() const { return meta.shape.is_square(); }
 
     void print(size_t width = 4,size_t prec = 2)const;
     
@@ -98,7 +106,7 @@ public:
     inline Tensor view(Shape s) const;
 
     Tensor& reshape(Shape s);
-    void set_requires_grad(bool i) { requires_grad_ = i; }
+    
     Tensor ravel();
     Tensor flatten();
     Tensor& unsqueeze(size_t dim);

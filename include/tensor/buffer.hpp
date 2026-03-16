@@ -6,177 +6,145 @@
 
 #include "dtype.hpp"
 #include "util/err.hpp"
-#include "util/check_cuda.cuh"
 #include "device.hpp"
+#include "storage.hpp"
 
 
-namespace EC {
+namespace EC::AT {
 
-struct BufferDesc{
-    size_t nbytes = 0;
-    DType dtype = DType::f32;
-    DI device = DI::cpu();
-    bool is_contituous = true;
-    size_t align = 64;
-    size_t offset_bytes = 0;
-}
+    // 不持有真实数据，是数据视图
+struct Buffer {
+    std::shared_ptr<Storage> storage;
+    size_t offset_bytes{0};
+    size_t visible_bytes{0};
+    DType dtype{DType::f32};
+    DI device{DI::cpu()};
+    bool is_contiguous{true};
 
-// TODO : check memory status if valid;
-struct Buffer{
-    void* ptr = nullptr;
-    // size_t nbytes;
-    // DType dtype = DType::f32;
-    // DI device = DI::cpu();
-    // bool is_contiguous = true;
-    // size_t align = 64;
-    // size_t offset_bytes = 0;
-    BufferDesc desc;
-    bool owns_memorys = false;
-    bool allocated() const{return ptr != nullptr;}
+    Buffer() = default;
 
-    Buffer()=default;
-    explicit Buffer(size_t bytes,DType dt=DType::f32,DI dev=DI::cpu(),size_t align_=64):nbytes(bytes),dtype(dt),device(dev),align(align_){
-        switch (device.type()){
-        case DeviceType::CPU:{
-#ifdef __cpp_aligned_new
-            ptr = ::operator new(bytes,::std::align_val_t(align));
-#else
-            ptr = std::malloc(bytes);
-#endif
-            if(!ptr) throw ::std::bad_alloc();
-        }break;
-        case DeviceType::CUDA:{ptr = DM::get_current_cuda_context(device.id())->allocate(nbytes,true,DM::get_current_cuda_context()->default_stream);}break;
-        default:
-            throw BufferException("unknow device to allocate memory!");
+    Buffer(std::shared_ptr<Storage> st,
+           size_t offset,
+           size_t bytes,
+           DType dt,
+           DI dev,
+           bool contiguous = true)
+        : storage(std::move(st)),
+          offset_bytes(offset),
+          visible_bytes(bytes),
+          dtype(dt),
+          device(dev),
+          is_contiguous(contiguous) {}
+
+    static std::shared_ptr<Buffer> make(size_t bytes,
+                                        DType dt = DType::f32,
+                                        DI dev = DI::cpu(),
+                                        size_t align = 64) {
+        auto st = std::make_shared<Storage>(bytes, dev, align);
+        st->allocate();
+
+        return std::make_shared<Buffer>(st, 0, bytes, dt, dev, true);
+    }
+
+    static std::shared_ptr<Buffer> make_unallocated(size_t bytes,
+                                                    DType dt = DType::f32,
+                                                    DI dev = DI::cpu(),
+                                                    size_t align = 64) {
+        auto st = std::make_shared<Storage>(bytes, dev, align);
+        return std::make_shared<Buffer>(st, 0, bytes, dt, dev, true);
+    }
+
+    bool valid() const {
+        return storage != nullptr;
+    }
+
+    bool allocated() const {
+        return storage && storage->allocated();
+    }
+
+    bool empty() const {
+        return visible_bytes == 0;
+    }
+
+    size_t nbytes() const {
+        return visible_bytes;
+    }
+
+    size_t capacity_bytes() const {
+        return storage ? storage->nbytes : 0;
+    }
+
+    void allocate() {
+        if (!storage) {
+            throw BufferException("Buffer allocate failed: null storage");
         }
+        storage->allocate();
     }
-    // 释放原数据
-    void release()noexcept{
-        switch(device.type()){
-            case DeviceType::CPU :{
-                DM::get_current_cpu_context(device.id())->deallocate(ptr,align);
-            } return;
-            case DeviceType::CUDA:{
-                DM::get_current_cuda_context(device.id())->deallocate(ptr);
-            } return;
+
+    void allocateAsync(Dev::StreamHandle stream) {
+        if (!storage) {
+            throw BufferException("Buffer allocateAsync failed: null storage");
         }
+        storage->allocateAsync(stream);
     }
 
-    ~Buffer() { release(); }    
-
-    Buffer(const Buffer&)=delete;
-    Buffer& operator=(const Buffer&)=delete;
-    Buffer& operator=(Buffer&& o) noexcept{
-        if(this == &o) return *this;
-        release();
-        ptr=o.ptr;
-        dtype=o.dtype;
-        device=o.device;
-        nbytes=o.nbytes;
-        align = o.align;
-        o.ptr=nullptr;
-        o.nbytes=0;
-        return *this;
+    void release() noexcept {
+        // Buffer 自己不主动 release 底层内存。
+        // 真正释放由 shared_ptr<Storage> 的生命周期决定。
+        storage.reset();
+        offset_bytes = 0;
+        visible_bytes = 0;
+        is_contiguous = true;
     }
 
-    Buffer(Buffer&& o) noexcept {
-        ptr = o.ptr;
-        dtype = o.dtype;
-        device = o.device;
-        nbytes = o.nbytes;
-        align = o.align;
-        o.ptr = nullptr;
-        o.nbytes = 0;
+    void* raw_ptr() {
+        return storage ? storage->ptr : nullptr;
     }
 
+    const void* raw_ptr() const {
+        return storage ? storage->ptr : nullptr;
+    }
 
+    void* data_ptr() {
+        if (!storage || !storage->ptr) return nullptr;
+        return static_cast<void*>(static_cast<char*>(storage->ptr) + offset_bytes);
+    }
 
-    // 获取数据指针
-    void* data_ptr(){return ptr;}
-    const void* data_ptr()const{return ptr;}
-    Buffer move() noexcept {return std::move(*this);}
+    const void* data_ptr() const {
+        if (!storage || !storage->ptr) return nullptr;
+        return static_cast<const void*>(static_cast<const char*>(storage->ptr) + offset_bytes);
+    }
 
+    template<typename T>
+    T& operator[] (size_t idx){
+        if(idx >= visible_bytes) throw std::out_of_range("Buffer View index out of range");
+        char* base = static_cast<char*> (data_ptr());
+        return *reinterpret_cast<T*>(base+idx * size_dtype(dtype));
+    }
+    template<typename T>
+    const T& operator[] (size_t idx) const{
+        if(idx >= visible_bytes) throw std::out_of_range("Buffer View index out of range");
+        char* base = static_cast<const char*> (data_ptr());
+        return *reinterpret_cast<const T*>(base+idx * size_dtype(dtype));
+    }
 
+    Buffer view(size_t offset, size_t bytes) const {
+        if (!storage) {
+            throw BufferException("Buffer::view failed: null storage");
+        }
+        if (offset + bytes > visible_bytes) {
+            throw BufferException("Buffer::view failed: out of range");
+        }
+
+        return Buffer{
+            storage,
+            offset_bytes + offset,
+            bytes,
+            dtype,
+            device,
+            is_contiguous
+        };
+    }
 };
 
 }
-
-
-    // Buffer h2d(int device_id = 0,bool async=true)const{
-    //     if (device.type() != DeviceType::CPU) {
-    //         throw std::runtime_error("h2d() only support CPU Buffer");
-    //     }
-    //     Buffer newb;
-    //     auto ctx = DM::get_current_cuda_context(device_id);
-    //     newb.ptr = ctx->allocate(nbytes,true,ctx->custom_streams["allocate_cuda"]);
-    //     if (newb.ptr == nullptr) {
-    //         throw std::runtime_error("CUDA allocate memory failed");
-    //     }
-    //     newb.dtype = this->dtype;
-    //     newb.device = Device::cuda(device_id);  
-    //     newb.nbytes = nbytes;
-    //     newb.align = this->align;
-    //     if(this->ptr != nullptr){
-    //         cudaMemcpyAsync(newb.ptr,this->ptr,nbytes,cudaMemcpyHostToDevice,ctx->custom_streams["h2d" + std::to_string(device.id())]);
-    //     }
-    //     if(!async){ctx->sync_stream(ctx->custom_streams["h2d" + std::to_string(device.id())]);}
-    //     return newb;
-    // }
-
-    // Buffer d2h(bool async = true){
-    //     if (device.type() != DeviceType::CUDA) {
-    //         throw std::runtime_error("d2h() only support CUDA Buffer");
-    //     }
-    //     Buffer newb;
-    //     // 对齐
-    //     if (posix_memalign(&newb.ptr, align, nbytes) != 0) {
-    //         throw std::runtime_error("CPU allocate memory failed (posix_memalign)");
-    //     }
-
-    //     newb.dtype = this->dtype;
-    //     newb.device = Device::cpu();
-    //     newb.nbytes = nbytes;
-    //     newb.align = this->align;
-
-    //     if (this->ptr != nullptr ) {
-
-    //         cudaSetDevice(device.id());
-    //         // 异步拷贝
-    //         CUDA_CHECK(cudaMemcpyAsync(newb.ptr, this->ptr, nbytes,cudaMemcpyDeviceToHost, 
-    //             DM::get_current_cuda_context(device.id())->custom_streams["d2h" + std::to_string(device.id())]));
-    //         if(!async){ DM::get_current_cuda_context(device.id())->sync_stream("h2d" + std::to_string(device.id()));}
-    //     }
-
-    //     return newb; // 移动构造
-    // }
-
-    // void h2d_(int device_id=0,bool async = true){
-    //     if (device.type() != DeviceType::CPU) {
-    //         throw std::runtime_error("h2d_() only support CPU Buffer");
-    //     }
-    //     if (this->ptr == nullptr) {this->device=Device::cuda(this->device.id());return;}
-    //     auto cuda_ctx = DM::get_current_cuda_context(device_id);
-    //     void* cuda_ptr = cuda_ctx->allocate(nbytes,true,cuda_ctx->custom_streams["h2d" + std::to_string(device_id)]);
-    //     CUDA_CHECK(cudaMemcpyAsync(cuda_ptr, this->ptr,nbytes, 
-    //                               cudaMemcpyHostToDevice, cuda_ctx->custom_streams["h2d"+ std::to_string(device_id)]));
-    //     if(!async){cuda_ctx->sync_stream("h2d"+ std::to_string(device_id));}
-    //     DM::get_current_cpu_context()->deallocate(this->ptr,align);
-    //     this->ptr = cuda_ptr;
-    //     this->device = Device::cuda(device_id);
-    // }
-
-    // void d2h_(bool async = true){
-    //     if (device.type() != DeviceType::CUDA) {
-    //         throw std::runtime_error("h2d_() only support CUDA Buffer");
-    //     }
-    //     auto cuda_ctx = DM::get_current_cuda_context(device.id());
-    //     cudaStream_t s = cuda_ctx->custom_streams["d2h"+ std::to_string(device.id())];
-    //     if(nbytes == 0){this->device = Device::cpu();return;}
-        
-    //     void* cpu_ptr = DM::get_current_cpu_context()->allocate(nbytes,true);
-    //     CUDA_CHECK(cudaMemcpyAsync(cpu_ptr, this->ptr,nbytes, 
-    //                               cudaMemcpyDeviceToHost,s ));
-    //     this->ptr = cpu_ptr;
-    //     if(!async){cuda_ctx->sync_stream(s);}
-    //     return;
-    // }
