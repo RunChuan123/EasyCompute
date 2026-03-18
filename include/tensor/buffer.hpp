@@ -88,6 +88,26 @@ struct Buffer {
         storage->allocateAsync(stream);
     }
 
+    void flush_host_to_device_if_needed() const {
+        if (!storage) return;
+        storage->flush_host_to_device_if_needed();
+    }
+
+    void ensure_host_mirror() const {
+        if (!storage) throw BufferException("Buffer::ensure_host_mirror null storage");
+        storage->ensure_host_mirror();
+    }
+
+    void mark_host_dirty() const {
+        if (!storage) return;
+        storage->mark_host_dirty();
+    }
+
+    void invalidate_host() const {
+        if (!storage) return;
+        storage->invalidate_host();
+    }
+
     void release() noexcept {
         // Buffer 自己不主动 release 底层内存。
         // 真正释放由 shared_ptr<Storage> 的生命周期决定。
@@ -113,6 +133,11 @@ struct Buffer {
     const void* data_ptr() const {
         if (!storage || !storage->ptr) return nullptr;
         return static_cast<const void*>(static_cast<const char*>(storage->ptr) + offset_bytes);
+    }
+
+    void* host_data_ptr() const {
+        if (!storage || !storage->host_ptr) return nullptr;
+        return static_cast<void*>(static_cast<char*>(storage->host_ptr) + offset_bytes);
     }
 
     template<typename T>

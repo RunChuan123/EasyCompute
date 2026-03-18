@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace EC
 {
@@ -56,6 +57,29 @@ struct DeviceIdentification{
 
     DeviceType type()const{return type_;}
     int id()const{return index_;}
+    std::string to_string()const{
+        std::ostringstream oss;
+        switch (type_)
+        {
+        case DeviceType::CPU:
+            oss << "cpu:";
+            break;
+        case DeviceType::CUDA:
+            oss << "cuda:";
+            break;
+        case DeviceType::ASCEND:
+            oss << "ascend:";
+            break;
+        default:
+            break;
+        }
+        oss << index_;
+        return oss.str();
+    }
+    inline bool operator==(const DeviceIdentification& rhs){
+        if(rhs.type_ == type_ && rhs.index_ == index_)return true;
+        return false;
+    }
 };
 
 using DI = DeviceIdentification;

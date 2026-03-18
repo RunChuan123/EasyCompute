@@ -51,6 +51,10 @@ public:
         return runtime(dev.type()).createStream(dev, priority);
     }
 
+    void destroyStream(StreamHandle stream) {
+        return runtime(stream.device().type()).destroyStream(stream);
+    }
+
     EventHandle createEvent(DI dev, bool timing = false) {
         return runtime(dev.type()).createEvent(dev, timing);
     }

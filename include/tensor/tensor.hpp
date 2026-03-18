@@ -13,7 +13,9 @@
 
 namespace EC::AT{
 
-std::atomic<uint64_t> g_tensor_id_counter{1}; // 0 留给 invalid 也行
+
+
+inline std::atomic<uint64_t> g_tensor_id_counter{1}; // 0 留给 invalid 也行
 
 struct TensorId {
     uint64_t value = invalid();
@@ -63,19 +65,15 @@ public:
     TensorId id()const{return id_;}
     bool is_symbolic() const {return sym_.has_value();}
     int32_t sym() const {return sym_.value(); }
-    inline size_t offset_bytes() const { return data_->offset_bytes; }
-    bool is_contiguous()const{return data_->is_contiguous;}
+    inline size_t offset_bytes() const { return data_? data_->offset_bytes : 0; }
+    bool is_contiguous()const{return data_ ? data_->is_contiguous : true;}
     std::vector<size_t> strides()const{return make_strides(meta.shape);}
     inline void set_requires_grad(bool i) { meta.requires_grad = i; }
-    template<typename T>
-    T& operator[](size_t index);
-    template<typename T>
-    const T& operator[](size_t index) const;
 
     template<typename T>
-    inline T* data_ptr(){return data_? static_cast<T*>(data_->data_ptr()) : nullptr;}
+    T& Tensor::operator[](size_t index) {return at<T>(Shape({index}));}
     template<typename T>
-    inline const T* data_ptr()const{return data_? static_cast<const T*>(data_->data_ptr() : nullptr);}
+    const T& Tensor::operator[](size_t index) const {return at<T>(Shape({index}));}
 
     inline const Buffer* buffer_ptr() const { return data_.get(); }
     inline std::shared_ptr<Buffer> buffer() const { return data_; }
@@ -134,14 +132,35 @@ private:
 
     TensorId id_=TensorId{};
     std::shared_ptr<Buffer> data_;
-    std::shared_ptr<Buffer> tmp_data_;// 临时数据视图，给打印看
+    std::shared_ptr<Buffer> tmp_data_; // 临时数据视图，给打印看
     std::shared_ptr<Tensor> grad_;
 
     TensorMeta meta;
     // 计算图使用
     std::optional<ValueId> sym_;
+
     void allocate_();
+    void bind_unallocated_();
     void fill_(float value=0.0f);
+
+    void ensure_storage_();
+    void ensure_host_mirror_() const;
+
+    template<typename T>
+    inline T* data_ptr() {
+        if (!data_) return nullptr;
+        data_->flush_host_to_device_if_needed();
+        return static_cast<T*>(data_->data_ptr());
+    }
+
+    template<typename T>
+    inline const T* data_ptr() const {
+        if (!data_) return nullptr;
+        data_->flush_host_to_device_if_needed();
+        return static_cast<const T*>(data_->data_ptr());
+    }
+
+    
 
 };
 
@@ -154,8 +173,34 @@ struct TensorMeta{
     size_t numel() const {return shape.numel();}
     size_t itemsize() const {return size_dtype(dtype);}
     size_t nbytes() const {return numel() * itemsize();}
+
 };
 
+namespace detail {
+
+inline std::vector<size_t> invert_perm(const std::vector<size_t>& p) {
+    std::vector<size_t> inv(p.size());
+    for (size_t i = 0; i < p.size(); ++i) inv[p[i]] = i;
+    return inv;
+}
+
+inline std::vector<size_t> unravel_index(size_t linear, const Shape& shape) {
+    std::vector<size_t> idx(shape.rank(), 0);
+    auto strides = make_strides(shape);
+    for (size_t i = 0; i < shape.rank(); ++i) {
+        idx[i] = linear / strides[i];
+        linear %= strides[i];
+    }
+    return idx;
+}
+
+template<typename T>
+inline void fill_typed(void* ptr, size_t n, T v) {
+    T* p = static_cast<T*>(ptr);
+    for (size_t i = 0; i < n; ++i) p[i] = v;
+}
+
+} // namespace detail
 }
 
 namespace std {

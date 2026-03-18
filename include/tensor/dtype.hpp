@@ -11,8 +11,12 @@ enum class DType:uint8_t{
     f32,
     f16,
     bf16,
+    i64,
     i32,
+    i16,
     i8,
+    u8,
+    bool_,
     NumDType,
     Unknow
 };
@@ -56,27 +60,34 @@ constexpr DType get_dtype<__nv_bfloat>() {
 template<typename T>
 using DTypeOf = decltype(get_dtype<T>());
 
-
-
-// 3. 反向映射：从DType枚举获取类型大小（可选，辅助功能）
 constexpr size_t size_dtype(DType dtype) {
     switch (dtype) {
-        case DType::f32:  return sizeof(float);
-        case DType::i32:  return sizeof(int);
-        case DType::f64:  return sizeof(double);
-        case DType::i8:   return sizeof(int8_t);
-        default:          return 0; 
+        case DType::f16:   return 2;
+        case DType::f32:   return 4;
+        case DType::f64:   return 8;
+        case DType::i8:    return 1;
+        case DType::i16:   return 2;
+        case DType::i32:   return 4;
+        case DType::i64:   return 8;
+        case DType::u8:    return 1;
+        case DType::bool_: return 1;
+        default:
+            throw TypeException("size_dtype: unknown dtype");
     }
 }
 
-// 4. 反向映射：从DType枚举获取类型名称（可选，调试用）
 inline const char* name_dtype(DType dtype) {
     switch (dtype) {
-        case DType::f32:  return "float32";
-        case DType::i32:  return "int32";
-        case DType::f64:  return "double";
-        case DType::i8:   return "int8";
-        default:          return "unknown";
+        case DType::f16:   return "f16";
+        case DType::f32:   return "f32";
+        case DType::f64:   return "f64";
+        case DType::i8:    return "i8";
+        case DType::i16:   return "i16";
+        case DType::i32:   return "i32";
+        case DType::i64:   return "i64";
+        case DType::u8:    return "u8";
+        case DType::bool_: return "bool";
+        default:           return "unknown";
     }
 }
 

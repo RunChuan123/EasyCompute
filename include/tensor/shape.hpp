@@ -28,6 +28,8 @@ namespace EC
             return Shape(this->dims);
         }
 
+        inline bool empty()const{ return dims.empty(); }
+
         inline size_t rank()const{return dims.size();}
 
         inline size_t numel()const{
@@ -38,6 +40,15 @@ namespace EC
         }
         
         bool operator==(const Shape& o)const{return dims == o.dims;}
+
+        size_t& operator[] (size_t idx){
+            if(idx >= dims.size()) throw std::out_of_range("operator[] out of range");
+            return dims[idx];
+        }
+        const size_t& operator[] (size_t idx)const{
+            if(idx >= dims.size()) throw std::out_of_range("operator[] out of range");
+            return dims[idx];
+        }
 
         // 语法糖
         size_t rows()const{return dims[0];}
@@ -52,15 +63,20 @@ namespace EC
                 static_cast<size_t>(index);
         }
 
+        inline std::string to_string() const {
+            std::ostringstream oss;
+            oss << "[ ";
+            for(size_t i =0;i < dims.size();i++){
+                oss << dims[i];
+                if(i != dims.size()-1) oss << ", "; 
+            }
+            oss << "]";
+            return oss.str();
+        }
     };
 
     inline std::ostream& operator<<(std::ostream& os,const Shape& s){
-        os << "[ ";
-        for(size_t i =0;i<s.dims.size();i++){
-            os << s.dims[i];
-            if(i != s.dims.size()-1) os << ", "; 
-        }
-        os << "]";
+        os << s.to_string();
         return os;
     }
 
@@ -73,5 +89,17 @@ namespace EC
             strides[i - 2] = strides[i - 1] * shape.dims[i - 1];
         }
         return strides;
+    }
+    inline size_t compute_offset_contiguous(const Shape& shape, const Shape& index) {
+        if (shape.rank() != index.rank()) {
+            throw ShapeException("index rank mismatch");
+        }
+        auto strides = make_strides(shape);
+        size_t linear = 0;
+        for (size_t i = 0; i < shape.rank(); ++i) {
+            if (index[i] >= shape[i]) throw ShapeException("index out of range");
+            linear += index[i] * strides[i];
+        }
+        return linear;
     }
 } // namespace EC
