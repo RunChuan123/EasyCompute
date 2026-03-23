@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <mutex>
+#include <cstring>
 
 #include "dtype.hpp"
 #include "util/err.hpp"

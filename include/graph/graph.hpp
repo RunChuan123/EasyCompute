@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 #include "node.hpp"
-// #include "tensor/api.hpp"
+#include "tensor/api.hpp"
 
 namespace EC::Gr
 {
@@ -32,7 +32,7 @@ struct Graph{
     ValueId next_value_id;
     NodeId  next_node_id;
 
-    ValueId new_value(const TensorMeta& meta, ValueKind kind,bool req_grad,std::string name = "");
+    ValueId new_value(const AT::TensorMeta& meta, ValueKind kind,bool req_grad,std::string name = "");
 
     NodeId new_node(TOp op,std::vector<ValueId>& in,std::vector<ValueId>& out,const std::vector<ValueId>& attrs={},std::string name = "",std::string scope = "");
 

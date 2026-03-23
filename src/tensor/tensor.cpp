@@ -2,6 +2,7 @@
 #include <cassert>
 #include <iomanip>
 
+#include "kernel/cpu/mem.hpp"
 #include "tensor/tensor.hpp"
 #include "tensor/shape.hpp"
 #include "util/rand.h"
@@ -11,9 +12,20 @@
 namespace EC::AT{
 
 template<typename T>
+inline void require_tensor_type(DType dt, const char* where) {
+    if (prim_dtype<T>() != dt) {
+        throw TypeException(
+            std::string(where) +
+            ": requested cpp type=" + dtype_name(cpp_dtype<T>()) +
+            ", but tensor dtype=" + dtype_name(dt)
+        );
+    }
+}
+
+template<typename T>
 T& Tensor::at(const Shape& index) {
     if (get_dtype<T>() != meta.dtype) {
-        throw TypeError("Tensor::at<T> type mismatch with tensor dtype");
+        throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
     }
     const size_t off = offset(index);
 
@@ -29,7 +41,7 @@ T& Tensor::at(const Shape& index) {
 template<typename T>
 const T& Tensor::at(const Shape& index) const {
     if (get_dtype<T>() != meta.dtype) {
-        throw TypeError("Tensor::at<T> type mismatch with tensor dtype");
+        throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
     }
     const size_t off = offset(index);
 
@@ -105,16 +117,18 @@ void Tensor::bind_unallocated_() {
 void Tensor::fill_(float value){
     ensure_storage_();
     auto fill_host = [&](void* ptr){
-        switch (meta.dtype)
-        {
-        case DType::f32:
-            detail::fill_typed(ptr,meta.numel(),static_cast<float>(value));
-            break;
-        case DType::f16:
-            detail::fill_typed(ptr,meta.numel(),static_cast<_Float16>(value));
-            break;
-        default:
-            break;
+        switch (meta.dtype) {
+            case DType::f32:
+                CPU::fill<float>(ptr, meta.numel(), static_cast<float>(value));
+                break;
+            case DType::f64:
+                CPU::fill<double>(ptr, meta.numel(), static_cast<double>(value));
+                break;
+            case DType::i32:
+                CPU::fill<int32_t>(ptr, meta.numel(), static_cast<int32_t>(value));
+                break;
+            default:
+                throw TypeException("fill_ unsupported dtype");
         }
     };
     if (meta.device.type() == DeviceType::CPU) {
@@ -513,7 +527,7 @@ void Tensor::to(DI dev) {
     data_ = new_buf;
     meta.device = dev;
 }
-
+// TODO: 后面转为cast_contiguous
 void Tensor::to(DType dt) {
     if (meta.dtype == dt) return;
 

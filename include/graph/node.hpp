@@ -17,17 +17,9 @@ using ValueId = int32_t;
 using NodeId = int32_t;
 
 
-
-struct TensorMeta{
-    Shape shape;
-    DType dtype;
-    Device device;
-    bool requires_grad;
-};
-
 struct Value{
     ValueId id;
-    TensorMeta meta;
+    AT::TensorMeta meta;
     ValueKind kind = ValueKind::Temp;
     std::string name;
     bool requires_grad = false;

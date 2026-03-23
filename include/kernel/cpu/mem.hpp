@@ -4,12 +4,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "dtype.hpp"
-#include "shape.hpp"
-#include "../util/err.hpp"
-#include "tensor.hpp"
-
-namespace EC::AT::cpu {
+#include "tensor/api.hpp"
+namespace EC::AT::CPU {
 
 template<typename T>
 inline void fill(void* dst, size_t n, T value) {

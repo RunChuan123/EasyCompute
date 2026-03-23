@@ -16,6 +16,8 @@ namespace EC::AT{
 
 
 inline std::atomic<uint64_t> g_tensor_id_counter{1}; // 0 留给 invalid 也行
+using ValueId = int32_t;
+
 
 struct TensorId {
     uint64_t value = invalid();
@@ -32,7 +34,18 @@ inline TensorId make_tensor_id() {
     return id;
 }
 
-using ValueId = int32_t;
+struct TensorMeta{
+    Shape shape;
+    DType dtype;
+    DI device;
+    bool is_contiguous{true};
+    bool requires_grad{false};
+    size_t numel() const {return shape.numel();}
+    size_t itemsize() const {return size_dtype(dtype);}
+    size_t nbytes() const {return numel() * itemsize();}
+
+};
+
 
 struct Tensor : std::enable_shared_from_this<Tensor> {
 public:
@@ -71,9 +84,9 @@ public:
     inline void set_requires_grad(bool i) { meta.requires_grad = i; }
 
     template<typename T>
-    T& Tensor::operator[](size_t index) {return at<T>(Shape({index}));}
+    T& operator[](size_t index) {return at<T>(Shape({index}));}
     template<typename T>
-    const T& Tensor::operator[](size_t index) const {return at<T>(Shape({index}));}
+    const T& operator[](size_t index) const {return at<T>(Shape({index}));}
 
     inline const Buffer* buffer_ptr() const { return data_.get(); }
     inline std::shared_ptr<Buffer> buffer() const { return data_; }
@@ -164,17 +177,7 @@ private:
 
 };
 
-struct TensorMeta{
-    Shape shape;
-    DType dtype;
-    DI device;
-    bool is_contiguous{true};
-    bool requires_grad{false};
-    size_t numel() const {return shape.numel();}
-    size_t itemsize() const {return size_dtype(dtype);}
-    size_t nbytes() const {return numel() * itemsize();}
 
-};
 
 namespace detail {
 

@@ -1,7 +1,11 @@
 #pragma once
 
 #include <cstddef>
+#include <exception>
 #include <cstdint>
+#include <string>
+
+#include "util/err.hpp"
 
 namespace EC
 {
@@ -90,5 +94,50 @@ inline const char* name_dtype(DType dtype) {
         default:           return "unknown";
     }
 }
+
+template<typename T>
+struct PrimToDType;
+
+template<>
+struct PrimToDType<float>{
+    static constexpr DType value = DType::f32;
+};
+template<>
+struct PrimToDType<double>{
+    static constexpr DType value = DType::f64;
+};
+template<>
+struct PrimToDType<int8_t>{
+    static constexpr DType value = DType::i8;
+};
+
+template<>
+struct PrimToDType<int16_t>{
+    static constexpr DType value = DType::i16;
+};
+template<>
+struct PrimToDType<int32_t>{
+    static constexpr DType value = DType::i32;
+};
+template<>
+struct PrimToDType<uint8_t>{
+    static constexpr DType value = DType::u8;
+};
+
+template<typename T>
+inline constexpr DType PrimToDtype_v = PrimToDType<std::remove_cv_t<T>>::value;
+
+template<typename T>
+inline DType prim_dtype(){
+    return PrimToDtype_v<T>;
+}
+
+template<typename T>
+inline void check_dtype_match(DType dt){
+    if(prim_dtype<T>() != dt){
+        throw TypeException("type mismatch");
+    }
+}
+
 
 } // namespace EC

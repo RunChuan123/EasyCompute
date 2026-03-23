@@ -70,15 +70,6 @@ namespace EC
             err_msg_ = oss.str();
         }
     };
-    class ShapeException : public ECException {
-    public:
-        ShapeException(const std::string& msg) : ECException(msg) {
-            // 可选：拼接更详细的错误信息（比如tensor ID）
-            std::ostringstream oss;
-            oss << "[ShapeException] " << msg;
-            err_msg_ = oss.str();
-        }
-    };
     class BufferException : public ECException {
     public:
         BufferException(const std::string& msg) : ECException(msg) {

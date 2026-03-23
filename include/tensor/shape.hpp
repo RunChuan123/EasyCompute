@@ -75,10 +75,12 @@ namespace EC
         }
     };
 
+
     inline std::ostream& operator<<(std::ostream& os,const Shape& s){
         os << s.to_string();
         return os;
     }
+    // utils
 
     inline std::vector<size_t> make_strides(const Shape& shape){
         if (shape.dims.empty()) {
@@ -90,16 +92,44 @@ namespace EC
         }
         return strides;
     }
-    inline size_t compute_offset_contiguous(const Shape& shape, const Shape& index) {
-        if (shape.rank() != index.rank()) {
-            throw ShapeException("index rank mismatch");
-        }
-        auto strides = make_strides(shape);
-        size_t linear = 0;
-        for (size_t i = 0; i < shape.rank(); ++i) {
-            if (index[i] >= shape[i]) throw ShapeException("index out of range");
-            linear += index[i] * strides[i];
-        }
-        return linear;
+
+    inline bool is_contiguous_strides(const Shape& shape, const std::vector<size_t>& strides) {
+        return make_strides(shape) == strides;
     }
+    inline size_t linear_offset_contiguous(const Shape& shape, const Shape& index) {
+        if (shape.rank() != index.rank()) {
+            throw ShapeException("linear_offset_contiguous: rank mismatch");
+        }
+
+        auto strides = make_strides(shape);
+        size_t off = 0;
+        for (size_t i = 0; i < shape.rank(); ++i) {
+            if (index[i] >= shape[i]) {
+                throw ShapeException("linear_offset_contiguous: index out of range");
+            }
+            off += index[i] * strides[i];
+        }
+        return off;
+    }
+
+    inline size_t linear_offset_strided(const Shape& shape,
+                                        const std::vector<size_t>& strides,
+                                        const Shape& index) {
+        if (shape.rank() != index.rank()) {
+            throw ShapeException("linear_offset_strided: rank mismatch");
+        }
+        if (shape.rank() != strides.size()) {
+            throw ShapeException("linear_offset_strided: strides rank mismatch");
+        }
+
+        size_t off = 0;
+        for (size_t i = 0; i < shape.rank(); ++i) {
+            if (index[i] >= shape[i]) {
+                throw ShapeException("linear_offset_strided: index out of range");
+            }
+            off += index[i] * strides[i];
+        }
+        return off;
+    }
+
 } // namespace EC
