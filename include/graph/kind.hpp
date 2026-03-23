@@ -6,10 +6,10 @@ namespace EC::Gr
 {
 
 enum class ValueKind : uint8_t{
-Input,
-Param,
-Const,
-Temp
+    Input,
+    Param,
+    Const,
+    Temp
 };
     
 } // namespace Gr

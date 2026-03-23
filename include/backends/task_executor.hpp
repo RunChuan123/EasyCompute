@@ -14,7 +14,7 @@
 #include "tensor/device.hpp"
 #include "util/logger.hpp"
 #include "util/err.hpp"
-#include "util/check_cuda.cuh"
+// #include "util/check_cuda.cuh"
 
 namespace EC{
 namespace Task{

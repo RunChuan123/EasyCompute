@@ -149,7 +149,7 @@ struct Buffer {
     template<typename T>
     const T& operator[] (size_t idx) const{
         if(idx >= visible_bytes) throw std::out_of_range("Buffer View index out of range");
-        char* base = static_cast<const char*> (data_ptr());
+        const char* base = static_cast<const char*> (data_ptr());
         return *reinterpret_cast<const T*>(base+idx * size_dtype(dtype));
     }
 

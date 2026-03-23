@@ -4,10 +4,9 @@
 #include <cassert>
 
 
-#include "tensor/tensor.hpp"
-#include "tensor/tensor_op.hpp"
-#include "tensor/device/nv/kernel/kernel.hpp"
-#include "tensor/meta.hpp"
+#include "tensor/api.hpp"
+#include "kernel/tensor_op.hpp"
+
 #include "util/rand.h"
 
 namespace EC::AT{

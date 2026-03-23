@@ -5,10 +5,7 @@
 #include <vector>
 #include <mutex>
 
-#include "dtype.hpp"
-#include "tensor.hpp"
-#include "device/device.hpp"
-#include "TOp.hpp"
+#include "tensor/api.hpp"
 
 namespace EC
 {
@@ -45,7 +42,7 @@ namespace AT{
 
 
 struct KernelContext {
-    Device device;
+    DI device;
     DType dtype;
 
     std::vector<IValue> inputs;   
@@ -114,10 +111,10 @@ struct KernelTable{
 
 
     template<typename R>
-    inline R dispatch_without_attrs(TOp op, DType dt,Device dev, auto&&... args) {
+    inline R dispatch_without_attrs(TOp op, DType dt,DI dev, auto&&... args) {
         KernelContext ctx{dev, dt,{},{},{}};
         (ctx.inputs.emplace_back(std::forward<decltype(args)>(args)), ...);
-        auto fn = lookup(op, dt, dev);
+        auto fn = lookup(op, dt, dev.type());
         fn(ctx); 
         return ctx.output<R>(0);
     }

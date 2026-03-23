@@ -16,8 +16,8 @@ inline void require_tensor_type(DType dt, const char* where) {
     if (prim_dtype<T>() != dt) {
         throw TypeException(
             std::string(where) +
-            ": requested cpp type=" + dtype_name(cpp_dtype<T>()) +
-            ", but tensor dtype=" + dtype_name(dt)
+            ": requested cpp type=" + name_dtype(prim_dtype<T>()) +
+            ", but tensor dtype=" + name_dtype(dt)
         );
     }
 }

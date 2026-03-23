@@ -32,9 +32,9 @@ struct Graph{
     ValueId next_value_id;
     NodeId  next_node_id;
 
-    ValueId new_value(const AT::TensorMeta& meta, ValueKind kind,bool req_grad,std::string name = "");
+    ValueId new_value(const AT::TensorMeta& meta, ValueKind kind,std::string name );
 
-    NodeId new_node(TOp op,std::vector<ValueId>& in,std::vector<ValueId>& out,const std::vector<ValueId>& attrs={},std::string name = "",std::string scope = "");
+    NodeId new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,std::vector<ValueId>& attrs,std::string name ,std::string scope);
 
     Value& value(ValueId id);
     const Value& value(ValueId id)const;

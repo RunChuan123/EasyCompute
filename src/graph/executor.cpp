@@ -1,13 +1,16 @@
 #include <stdexcept>
 #include "graph/executor.hpp"
 
-#include "tensor/tensor_op.hpp"  // lookup, TOp
+#include "kernel/tensor_op.hpp"  // lookup, TOp
 
 namespace EC::Gr {
 
 
 RunResult Executor::run(const Graph& g, const std::unordered_map<ValueId, AT::Tensor>& feeds) const {
     std::unordered_map<ValueId, AT::Tensor> table;
+    for(const auto& [vid,t] : g.const_table){
+        table.emplace(vid,t);
+    }
 
     // 绑定输入/参数/常量
     for (auto vid : g.inputs) {
@@ -29,13 +32,13 @@ RunResult Executor::run(const Graph& g, const std::unordered_map<ValueId, AT::Te
 
         // device/dtype：起步先从第一个输入取
         const  AT::Tensor& t0 = ivalue_cast< AT::Tensor>(in[0]);
-        AT::KernelContext k{ t0.device(), t0.dtype(), std::move(in) };
+        AT::KernelContext k{ t0.getDevice(), t0.getDtype(), std::move(in) ,{},{}};
 
         // attrs（如果你 Node 存 IValue，就直接塞进 k.attrs）
         // k.attrs = n.attrs;
 
         // lookup + call
-        auto fn = AT::GlobalKernelTable().lookup(n.op, t0.dtype(), t0.device());
+        auto fn = AT::GlobalKernelTable().lookup(n.op, t0.getDtype(), t0.getDevice().type());
         fn(k);
 
         // 写回 outputs

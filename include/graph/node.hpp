@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "tensor/api.hpp"
+#include "kernel/tensor_op.hpp"
 #include "kind.hpp"
 // #include "tensor/tensor.hpp"
 // #include "tensor/tensor_op.hpp"
@@ -22,7 +23,6 @@ struct Value{
     AT::TensorMeta meta;
     ValueKind kind = ValueKind::Temp;
     std::string name;
-    bool requires_grad = false;
 
     std::optional<NodeId> producer;
     std::vector<NodeId> users;
@@ -33,7 +33,7 @@ struct Node{
     TOp op;
     std::vector<ValueId> inputs;
     std::vector<ValueId> outputs;
-    std::vector<ValueId> attrs;
+    std::vector<IValue> attrs;
     
     std::string name;   
     std::string scope;

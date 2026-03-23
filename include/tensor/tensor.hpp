@@ -111,7 +111,14 @@ public:
     static Tensor normal(Shape s, float mean = 0.0F, float stddev = 1.0F,DType dt=DType::f32, DI dev = DI::cpu());
     static Tensor likes(Tensor& rhs,float v=0.0f);
     static Tensor Empty(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
-    // static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=true);// ?
+    static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=false);// ?
+    // id_ = make_tensor_id()
+    // data_ = nullptr
+    // shape_ = s
+    // dtype_ = dt
+    // device_ = dev
+    // requires_grad_ = requires_grad
+    // sym_ = vid
     // 上三角，下三角，等等
 
     inline Tensor view(Shape s) const;
