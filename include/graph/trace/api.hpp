@@ -17,7 +17,7 @@ AT::Tensor input(
 void mark_output(const AT::Tensor& t, const std::string& name = "");
 
 template <class Fn>
-auto trace(Fn&& fn) -> std::pair<GraphIR::Graph, decltype(fn())>;
+auto trace(Fn&& fn) -> std::pair<Gr::Graph, decltype(fn())>;
 
 template <class Fn>
 Gr::GraphModule trace_module(

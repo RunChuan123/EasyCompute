@@ -1,11 +1,20 @@
-#include "graph/trace/api.hpp"
+#include "graph/trace/ctx.hpp"
 
 namespace EC::Tr{
-// static thread_local ITracer* tls_tracer = nullptr;
 
-// ITracer* current_tracer() { return tls_tracer; }
+// TraceContext definition
 
-// // 仅给 TraceGuard/trace.cpp 用：设置当前 tracer
-// void set_current_tracer(ITracer* t) { tls_tracer = t; }
+Gr::Graph& TraceContext::graph(){return graph_;}
+const Gr::Graph& TraceContext::graph()const{return graph_;}
+
+Gr::ValueId TraceContext::resolve_tensor(const AT::Tensor& t){
+    if(t.is_symbolic()) return t.sym();
+    if(has_mapping(t)) return get_mapping(t);
+    return capture_const(t);
+}
+
+Gr::ValueId TraceContext::make_input()
+
+
 
 }

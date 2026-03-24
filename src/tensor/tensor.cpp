@@ -308,6 +308,14 @@ Tensor Tensor::likes(Tensor& rhs, float v) {
     return Tensor(rhs.getShape(), v, rhs.getDtype(), rhs.getDevice(), rhs.requires_grad());
 }
 
+Tensor Tensor::from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=false){
+    Tensor t; // without data
+    t.id_ = make_tensor_id();
+    t.meta = TensorMeta::make_meta(s,dt,dev,req_grad);
+    t.sym_ = vid;
+    return t;
+}
+
 Tensor& Tensor::reshape(Shape s) {
     if (s.numel() != meta.numel()) {
         throw ShapeException("reshape numel mismatch");

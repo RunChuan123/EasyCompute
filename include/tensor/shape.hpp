@@ -132,4 +132,20 @@ namespace EC
         return off;
     }
 
+namespace detail {
+
+
+inline std::vector<size_t> unravel_index(size_t linear, const Shape& shape) {
+    std::vector<size_t> idx(shape.rank(), 0);
+    auto strides = make_strides(shape);
+    for (size_t i = 0; i < shape.rank(); ++i) {
+        idx[i] = linear / strides[i];
+        linear %= strides[i];
+    }
+    return idx;
+}
+
+} // namespace detail
+
+
 } // namespace EC

@@ -43,7 +43,10 @@ struct TensorMeta{
     size_t numel() const {return shape.numel();}
     size_t itemsize() const {return size_dtype(dtype);}
     size_t nbytes() const {return numel() * itemsize();}
-
+    static TensorMeta make_meta(Shape s,DType dtype,DI dev,bool req_grad){
+        TensorMeta t(s,dtype,dev,true,req_grad);
+        return t;
+    }
 };
 
 
@@ -76,7 +79,7 @@ public:
     size_t numel() const { return meta.numel(); }
     bool requires_grad() const { return meta.requires_grad; }
     TensorId id()const{return id_;}
-    bool is_symbolic() const {return sym_.has_value();}
+    bool is_symbolic() const {return sym_.has_value();} // graph value
     int32_t sym() const {return sym_.value(); }
     inline size_t offset_bytes() const { return data_? data_->offset_bytes : 0; }
     bool is_contiguous()const{return data_ ? data_->is_contiguous : true;}
@@ -110,7 +113,7 @@ public:
     static Tensor uniform(Shape s, float low = 0.0F, float high = 1.0F,DType dt=DType::f32, DI dev = DI::cpu());
     static Tensor normal(Shape s, float mean = 0.0F, float stddev = 1.0F,DType dt=DType::f32, DI dev = DI::cpu());
     static Tensor likes(Tensor& rhs,float v=0.0f);
-    static Tensor Empty(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
+    // static Tensor Empty(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
     static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=false);// ?
     // id_ = make_tensor_id()
     // data_ = nullptr
@@ -186,31 +189,7 @@ private:
 
 
 
-namespace detail {
 
-inline std::vector<size_t> invert_perm(const std::vector<size_t>& p) {
-    std::vector<size_t> inv(p.size());
-    for (size_t i = 0; i < p.size(); ++i) inv[p[i]] = i;
-    return inv;
-}
-
-inline std::vector<size_t> unravel_index(size_t linear, const Shape& shape) {
-    std::vector<size_t> idx(shape.rank(), 0);
-    auto strides = make_strides(shape);
-    for (size_t i = 0; i < shape.rank(); ++i) {
-        idx[i] = linear / strides[i];
-        linear %= strides[i];
-    }
-    return idx;
-}
-
-template<typename T>
-inline void fill_typed(void* ptr, size_t n, T v) {
-    T* p = static_cast<T*>(ptr);
-    for (size_t i = 0; i < n; ++i) p[i] = v;
-}
-
-} // namespace detail
 }
 
 namespace std {

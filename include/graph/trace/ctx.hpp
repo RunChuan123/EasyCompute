@@ -35,7 +35,7 @@ public:
 
 private:
     Gr::Graph& graph_;
-    std::unordered_map<std::shared_ptr<AT::TensorId>,Gr::ValueId> tensor_map_;
+    std::unordered_map<AT::TensorId,Gr::ValueId> tensor_map_;
     std::vector<std::string> scope_stack_;
 
 };
