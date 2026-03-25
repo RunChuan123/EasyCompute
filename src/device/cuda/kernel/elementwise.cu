@@ -1,3 +1,6 @@
+
+#ifdef EC_ENABLE_CUDA
+
 #include <cuda_runtime.h>
 
 #define FLOAT4(addr) (reinterpret_cast<float4*>(addr)[0])
@@ -180,3 +183,4 @@ __global__ void element_wise_div_f32x4_loop_impl(float* a,float* b,float* out,si
 __global__ void product(){
     
 }
+#endif

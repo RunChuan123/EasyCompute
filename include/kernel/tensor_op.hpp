@@ -108,7 +108,9 @@ struct KernelTable{
     inline KernelFunc lookup(TOp op, DType dt, DeviceType dev) {
         return kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op];
     }
-
+    inline KernelFunc find(TOp op, DType dt = DType::f32, DeviceType dev = DeviceType::CPU){
+        return kernel_table[(uint8_t)dev][(uint8_t)dt][(uint8_t)op];// 后面调整为 OpDesc
+    }
 
     template<typename R>
     inline R dispatch_without_attrs(TOp op, DType dt,DI dev, auto&&... args) {

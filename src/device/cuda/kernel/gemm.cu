@@ -1,3 +1,6 @@
+
+#ifdef EC_ENABLE_CUDA
+
 #include <cuda_runtime.h>
 
 // 每个线程计算 C 中一个元素
@@ -52,3 +55,4 @@ __global__ void gemm_f32_v2(float alpha,float* A,float* B,float beta,float* C,in
 __global__ void gemm_f32_v3(){
     
 }
+#endif

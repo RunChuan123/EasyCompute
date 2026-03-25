@@ -1,8 +1,7 @@
 #include <cassert>
 
-#include "tensor/tensor_op.hpp"
+#include "kernel/tensor_op.hpp"
 #include "tensor/tensor.hpp"
-#include "tensor/device/cpu/kernel/matrix_op.hpp"
 #include "util/rand.h"
 
 #define AP2ZERO (1e-8)
@@ -10,12 +9,14 @@
 namespace EC::AT::CPU{
 namespace MatrixTOp{
 
+Tensor inverse(const Tensor& t);
+std::pair<Tensor,Tensor> lu_decompose_crout(const Tensor& t);
 // 辅助函数：前向替换解 Ly = b（L是单位下三角矩阵）
 Tensor forward_substitution(const Tensor& L, const Tensor& b) {
-    assert(L.shape().is_square());
-    assert(b.shape().dims[0] == L.shape().dims[0] && b.shape().dims[1] == 1);
-    size_t n = L.shape().dims[0];
-    Tensor y({n, 1}, 0.0f, L.dtype(),L.device());
+    assert(L.getShape().is_square());
+    assert(b.getShape().dims[0] == L.getShape().dims[0] && b.getShape().dims[1] == 1);
+    size_t n = L.getShape().dims[0];
+    Tensor y({n, 1}, 0.0f, L.getDtype(),L.getDevice());
 
     for (size_t i = 0; i < n; ++i) {
         float sum = 0.0f;
@@ -29,10 +30,10 @@ Tensor forward_substitution(const Tensor& L, const Tensor& b) {
 
 // 辅助函数：后向替换解 Ux = y（U是上三角矩阵）
 Tensor backward_substitution(const Tensor& U, const Tensor& y) {
-    assert(U.shape().is_square());
-    assert(y.shape().dims[0] == U.shape().dims[0] && y.shape().dims[1] == 1);
-    size_t n = U.shape().dims[0];
-    Tensor x({n, 1}, 0.0f, U.dtype(),U.device());
+    assert(U.getShape().is_square());
+    assert(y.getShape().dims[0] == U.getShape().dims[0] && y.getShape().dims[1] == 1);
+    size_t n = U.getShape().dims[0];
+    Tensor x({n, 1}, 0.0f, U.getDtype(),U.getDevice());
 
     for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
         float sum = 0.0f;
@@ -50,8 +51,8 @@ Tensor backward_substitution(const Tensor& U, const Tensor& y) {
 
 // 基于Crout LU分解的行列式计算 O(n³)
 float det(const Tensor& t) {
-    assert(t.shape().is_square());
-    size_t n = t.shape().dims[0];
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().dims[0];
 
     // 极小矩阵用拉普拉斯
     if (n == 1) return t.at({0, 0});
@@ -67,12 +68,12 @@ float det(const Tensor& t) {
 
 // 基于逆矩阵的伴随矩阵计算（adj(A) = det(A) * A⁻¹）
 Tensor adjugate(const Tensor& t) {
-    assert(t.shape().is_square());
+    assert(t.getShape().is_square());
     float determinant = det(t);
     Tensor inv = inverse(t);
 
-    size_t n = t.shape().rows();
-    Tensor adj({n, n}, 0.0f,t.dtype(), t.device());
+    size_t n = t.getShape().rows();
+    Tensor adj({n, n}, 0.0f,t.getDtype(), t.getDevice());
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < n; ++j) {
             adj.at({i, j}) = inv.at({i, j}) * determinant;
@@ -83,8 +84,8 @@ Tensor adjugate(const Tensor& t) {
 
 
 Tensor inverse(const Tensor& t) {
-    assert(t.shape().is_square());
-    size_t n = t.shape().rows();
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().rows();
     float determinant = det(t);
     
     if (std::fabs(determinant) < AP2ZERO) {
@@ -93,12 +94,12 @@ Tensor inverse(const Tensor& t) {
 
     // Crout LU分解
     auto [L, U] = lu_decompose_crout(t);
-    Tensor inv({n, n}, 0.0f, t.dtype(),t.device());
+    Tensor inv({n, n}, 0.0f, t.getDtype(),t.getDevice());
 
     // 对单位矩阵的每一列求解 Ax = e_i，得到逆矩阵的每一列
     for (size_t j = 0; j < n; ++j) {
         // 构造单位向量 e_j（第j列为1，其余为0）
-        Tensor b({n, 1}, 0.0f,t.dtype(), t.device());
+        Tensor b({n, 1}, 0.0f,t.getDtype(), t.getDevice());
         b.at({j, 0}) = 1.0f;
         
         // 解 Ly = b → Ux = y → x是逆矩阵的第j列
@@ -115,10 +116,10 @@ Tensor inverse(const Tensor& t) {
 }
 
 std::pair<Tensor,Tensor> lu_decompose_crout(const Tensor& t){
-    assert(t.shape().is_square());
-    size_t n = t.shape().rows();
-    Tensor L({n,n},0.0f,t.dtype(),t.device());
-    Tensor U({n,n},0.0f,t.dtype(),t.device());
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().rows();
+    Tensor L({n,n},0.0f,t.getDtype(),t.getDevice());
+    Tensor U({n,n},0.0f,t.getDtype(),t.getDevice());
 
     for(size_t i = 0; i<n;i++){
         L.at({i,i}) = 1;
@@ -146,10 +147,10 @@ std::pair<Tensor,Tensor> lu_decompose_crout(const Tensor& t){
 }
 
 std::pair<Tensor,Tensor> lu_decompose_doolittle(const Tensor& t){
-    assert(t.shape().is_square());
-    size_t n = t.shape().rows();
-    Tensor L({n,n},0.0f,t.dtype(),t.device());
-    Tensor U({n,n},0.0f,t.dtype(),t.device());
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().rows();
+    Tensor L({n,n},0.0f,t.getDtype(),t.getDevice());
+    Tensor U({n,n},0.0f,t.getDtype(),t.getDevice());
 
     for(size_t i =0 ;i<n;i++){
         U.at({i,i}) = 1;
@@ -175,14 +176,14 @@ std::pair<Tensor,Tensor> lu_decompose_doolittle(const Tensor& t){
 }
 
 Tensor submatrix(const Tensor& t,size_t exclude_row,size_t exclude_col) {
-    assert(t.shape().is_square());
-    size_t n = t.shape().rows()-1;
-    Tensor sub({n,n},0.0f,t.dtype(),t.device());
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().rows()-1;
+    Tensor sub({n,n},0.0f,t.getDtype(),t.getDevice());
     size_t sub_i = 0,sub_j =0;
-    for(size_t i = 0;i<t.shape().rows();i++){
+    for(size_t i = 0;i<t.getShape().rows();i++){
         if(i == exclude_row) continue;
         sub_j = 0;
-        for(size_t j = 0;j<t.shape().cols();j++){
+        for(size_t j = 0;j<t.getShape().cols();j++){
             if(j == exclude_col) continue;
             sub.at({sub_i,sub_j}) = t.at({i,j});
             sub_j++;
@@ -193,8 +194,8 @@ Tensor submatrix(const Tensor& t,size_t exclude_row,size_t exclude_col) {
 }
 
 float det_lapras(const Tensor& t) {
-    assert(t.shape().is_square());
-    size_t n = t.shape().rows();
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().rows();
     if(n == 1)
         return t.at({0,0});
     if(n==2)
@@ -208,9 +209,9 @@ float det_lapras(const Tensor& t) {
 }
 
 Tensor adjugate_lapras(const Tensor& t){
-    assert(t.shape().is_square());
-    size_t n = t.shape().rows();
-    Tensor adj({n,n},0.0,t.dtype(),t.device());
+    assert(t.getShape().is_square());
+    size_t n = t.getShape().rows();
+    Tensor adj({n,n},0.0,t.getDtype(),t.getDevice());
     for(size_t i = 0;i<n;++i){
         for(size_t j = 0;j<n;j++){
             float sign = ((i+j)%2==0)? 1.0f:-1.0f;
@@ -228,8 +229,8 @@ Tensor inverse_lapras(const Tensor& t){
         throw std::runtime_error("inverse_lapras: singular matrix(det=0) cannot inverse");
     }
     Tensor adj = adjugate_lapras(t);
-    size_t n = t.shape().rows();
-    Tensor inv({n,n},0.0,t.dtype(),t.device());
+    size_t n = t.getShape().rows();
+    Tensor inv({n,n},0.0,t.getDtype(),t.getDevice());
     for(size_t i = 0;i<n;i++){
         for(size_t j = 0;j<n;j++){
             inv.at({i,j}) = adj.at({i,j}) / determinant;

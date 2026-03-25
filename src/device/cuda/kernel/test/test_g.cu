@@ -1,3 +1,7 @@
+
+#ifdef EC_ENABLE_CUDA
+
+
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
@@ -59,3 +63,5 @@ int main() {
     std::cout << "test_add_kernel passed\n";
     return EXIT_SUCCESS;
 }
+
+#endif

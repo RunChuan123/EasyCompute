@@ -1,4 +1,7 @@
 
+#ifdef EC_ENABLE_CUDA
+
+
 #include <memory>
 #include <stdio.h>
 #include <cassert>
@@ -8,6 +11,8 @@
 #include "kernel/tensor_op.hpp"
 
 #include "util/rand.h"
+
+
 
 namespace EC::AT{
 namespace NV{
@@ -51,3 +56,5 @@ void register_cuda_kernels(KernelTable& kt){
 }
 
 }
+
+#endif

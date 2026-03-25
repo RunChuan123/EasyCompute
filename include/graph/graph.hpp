@@ -29,12 +29,12 @@ struct Graph{
 
     std::unordered_map<ValueId,AT::Tensor> const_table;
 
-    ValueId next_value_id;
-    NodeId  next_node_id;
+    ValueId next_value_id = 0;
+    NodeId  next_node_id = 0;
 
     ValueId new_value(const AT::TensorMeta& meta, ValueKind kind,std::string name );
 
-    NodeId new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,std::vector<IValue>& attrs,std::string name ,std::string scope);
+    NodeId new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,const std::vector<IValue>& attrs={},std::string name ="",std::string scope = "");
 
     Value& value(ValueId id);
     const Value& value(ValueId id)const;

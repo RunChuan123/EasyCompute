@@ -35,7 +35,12 @@ inline TensorId make_tensor_id() {
 }
 
 struct TensorMeta{
-    Shape shape;
+
+    TensorMeta()=default;
+    TensorMeta(Shape s,DType dt,DI dev,bool req_grad):
+        shape(s),dtype(dt),device(dev),is_contiguous(true),requires_grad(req_grad){}
+    
+        Shape shape;
     DType dtype;
     DI device;
     bool is_contiguous{true};
@@ -43,8 +48,9 @@ struct TensorMeta{
     size_t numel() const {return shape.numel();}
     size_t itemsize() const {return size_dtype(dtype);}
     size_t nbytes() const {return numel() * itemsize();}
+    
     static TensorMeta make_meta(Shape s,DType dtype,DI dev,bool req_grad){
-        TensorMeta t(s,dtype,dev,true,req_grad);
+        TensorMeta t(s,dtype,dev,req_grad);
         return t;
     }
 };
@@ -82,6 +88,7 @@ public:
     TensorId id()const{return id_;}
     bool is_symbolic() const {return sym_.has_value();} // graph value
     int32_t sym() const {return sym_.value(); }
+    void set_sym(ValueId id){sym_ = id;}
     inline size_t offset_bytes() const { return data_? data_->offset_bytes : 0; }
     bool is_contiguous()const{return data_ ? data_->is_contiguous : true;}
     std::vector<size_t> strides()const{return make_strides(meta.shape);}
@@ -150,6 +157,19 @@ public:
     std::vector<Tensor> chunk(size_t chunks,size_t dim);
     void to(DI dev);
     void to(DType dt);
+    template<typename T>
+    inline T* data_ptr() {
+        if (!data_) return nullptr;
+        data_->flush_host_to_device_if_needed();
+        return static_cast<T*>(data_->data_ptr());
+    }
+
+    template<typename T>
+    inline const T* data_ptr() const {
+        if (!data_) return nullptr;
+        data_->flush_host_to_device_if_needed();
+        return static_cast<const T*>(data_->data_ptr());
+    }
 
 
 private:
@@ -170,19 +190,7 @@ private:
     void ensure_storage_();
     void ensure_host_mirror_() const;
 
-    template<typename T>
-    inline T* data_ptr() {
-        if (!data_) return nullptr;
-        data_->flush_host_to_device_if_needed();
-        return static_cast<T*>(data_->data_ptr());
-    }
-
-    template<typename T>
-    inline const T* data_ptr() const {
-        if (!data_) return nullptr;
-        data_->flush_host_to_device_if_needed();
-        return static_cast<const T*>(data_->data_ptr());
-    }
+    
 
     
 

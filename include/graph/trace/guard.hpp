@@ -4,22 +4,24 @@
 #include "ctx.hpp"
 
 
+namespace EC::Tr
+{
 
+struct TraceGuard{
 
+    explicit TraceGuard(TraceContext* ctx);
+    ~TraceGuard();
 
-// namespace EC::Tr
-// {
-//     struct TraceGuard{
-//     ExecMode prev_mode;
-//     ITracer* prev_ctx;
+    TraceGuard(const TraceGuard&)=delete;
+    TraceGuard& operator=(const TraceGuard&)=delete;
 
-//     explicit TraceGuard(ITracer& now)
-//     :prev_mode(g_mode),prev_ctx(current_tracer()){
-//         g_mode = ExecMode::Trace;
-//     }
-//     ~TraceGuard(){
-//         g_mode = prev_mode;
-//         set_current_tracer(prev_ctx);
-//     }
-// };
-// } // namespace EC::Tr
+private:
+    TraceMode prev_mode_ = TraceMode::Off;
+    TraceContext* prev_ctx_ = nullptr;
+};
+
+inline bool is_tracing(){
+    return current_trace_mode() == TraceMode::On && current_tracer() != nullptr;
+}
+
+}

@@ -308,7 +308,7 @@ Tensor Tensor::likes(Tensor& rhs, float v) {
     return Tensor(rhs.getShape(), v, rhs.getDtype(), rhs.getDevice(), rhs.requires_grad());
 }
 
-Tensor Tensor::from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=false){
+Tensor Tensor::from_symbol(ValueId vid,Shape s,DType dt, DI dev, bool req_grad){
     Tensor t; // without data
     t.id_ = make_tensor_id();
     t.meta = TensorMeta::make_meta(s,dt,dev,req_grad);

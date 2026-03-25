@@ -30,4 +30,14 @@ enum class TOp{
     detach
 
 };
+
+// optype _ datatype _ operandnum _ ...
+enum class OpDesc{
+
+    add_f32_ab
+
+
+
+};
+
 } // namespace EC

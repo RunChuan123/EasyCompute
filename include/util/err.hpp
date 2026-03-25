@@ -52,6 +52,24 @@ namespace EC
             err_msg_ = oss.str();
         }
     };
+    class GraphException : public ECException {
+    public:
+        GraphException(const std::string& msg) : ECException(msg) {
+            // 可选：拼接更详细的错误信息（比如tensor ID）
+            std::ostringstream oss;
+            oss << "[GraphException] "  << msg;
+            err_msg_ = oss.str();
+        }
+    };
+    class ExecuteException : public ECException {
+    public:
+        ExecuteException(const std::string& msg) : ECException(msg) {
+            // 可选：拼接更详细的错误信息（比如tensor ID）
+            std::ostringstream oss;
+            oss << "[ExecuteException] "  << msg;
+            err_msg_ = oss.str();
+        }
+    };
     class ContextException : public ECException {
     public:
         ContextException(const std::string& msg) : ECException(msg) {
