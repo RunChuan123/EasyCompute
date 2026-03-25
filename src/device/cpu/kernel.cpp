@@ -9,6 +9,7 @@
 #include "tensor/meta.hpp"
 #include "util/rand.h"
 #include "kernel/cpu/matrix_op.hpp"
+#include "backends/task_executor.hpp"
 
 namespace EC{
 namespace AT{
@@ -147,11 +148,45 @@ Tensor mul_imlp(const Tensor& a,const Tensor& b){
     }
     return out;
 } 
+
+void mul_into_impl(const Tensor& a, const Tensor& b, Tensor& out) {
+    auto [pa, pb, po] = get_data_ptrs_17<float>(a, b, out);
+    for (size_t i = 0; i < a.size(); ++i) {
+        po[i] = pa[i] * pb[i];
+    }
+}
+
+// void mul_kernel(KernelContext& ctx){
+//     Tensor a = ctx.input<Tensor>(0);
+//     Tensor b = ctx.input<Tensor>(1);
+//     Tensor out = mul_imlp(a,b);
+//     ctx.set_output(0,out);
+// }
 void mul_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);
-    Tensor out = mul_imlp(a,b);
+    // TODO 基本检查先省略
+
+    Tensor out{a.getShape(),0.0f,a.getDtype(),a.getDevice()};
+    auto& exec = Task::AsyncTaskExecutor::get_instance();
+
+    std::string task_name = "mul_" + a.id().to_string() + "_" + b.id().to_string();
+    exec.registerTask(
+        task_name,
+        Task::TaskType::Compute,
+        Task::Priority::Normal,
+        0,
+        a.getDevice(),
+        {},
+        [&a,&b,&out](){
+           mul_into_impl(a,b,out);
+           return true;
+        }
+    );
+    exec.executeUntilIdle();
+    exec.waitTask(task_name);
     ctx.set_output(0,out);
+
 }
 
 Tensor div_imlp(const Tensor& a,const Tensor& b){
