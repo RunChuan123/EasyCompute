@@ -76,6 +76,7 @@ public:
     Shape getShape() const { return meta.shape; }
     DType getDtype() const { return meta.dtype; }
     DI getDevice() const { return meta.device; }
+    TensorMeta getMeta()const {return meta;}
     size_t numel() const { return meta.numel(); }
     bool requires_grad() const { return meta.requires_grad; }
     TensorId id()const{return id_;}

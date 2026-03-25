@@ -218,7 +218,7 @@ Tensor Tensor::vector(std::initializer_list<float> vl, Shape s, DType dt, DI dev
     if (s.numel() != vl.size()) {
         throw ShapeException("vector initializer size mismatch");
     }
-    Tensor t = Tensor::Empty(s, dt, dev);
+    Tensor t = Tensor::zeros(s, dt, dev);
 
     if (dt != DType::f32) {
         throw TypeException("vector only implemented for f32 currently");
@@ -257,7 +257,7 @@ Tensor Tensor::E(Shape s, DType dt, DI dev) {
 }
 
 Tensor Tensor::uniform(Shape s, float low, float high, DType dt, DI dev) {
-    Tensor t = Tensor::Empty(s, dt, dev);
+    Tensor t = Tensor::zeros(s, dt, dev);
 
     if (dt != DType::f32) {
         throw TypeException("uniform only implemented for f32 currently");
@@ -281,7 +281,7 @@ Tensor Tensor::uniform(Shape s, float low, float high, DType dt, DI dev) {
 }
 
 Tensor Tensor::normal(Shape s, float mean, float stddev, DType dt, DI dev) {
-    Tensor t = Tensor::Empty(s, dt, dev);
+    Tensor t = Tensor::zeros(s, dt, dev);
 
     if (dt != DType::f32) {
         throw TypeException("normal only implemented for f32 currently");
@@ -404,7 +404,7 @@ Tensor& Tensor::permute(std::vector<size_t> dims) {
 Tensor Tensor::clone() {
     data_->flush_host_to_device_if_needed();
 
-    Tensor out = Tensor::Empty(meta.shape, meta.dtype, meta.device);
+    Tensor out = Tensor::zeros(meta.shape, meta.dtype, meta.device);
     out.meta.requires_grad = meta.requires_grad;
     out.meta.is_contiguous = meta.is_contiguous;
     out.data_->is_contiguous = data_->is_contiguous;
@@ -474,7 +474,7 @@ std::vector<Tensor> Tensor::split(size_t split_size, size_t dim) {
         size_t block_bytes = block_elems * meta.itemsize();
         size_t start_elem = start * inner;
 
-        Tensor out = Tensor::Empty(Shape(out_dims), meta.dtype, meta.device);
+        Tensor out = Tensor::zeros(Shape(out_dims), meta.dtype, meta.device);
 
         if (meta.device.type() == DeviceType::CPU) {
             char* dst = static_cast<char*>(out.data_->data_ptr());

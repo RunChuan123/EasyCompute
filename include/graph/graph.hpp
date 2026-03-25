@@ -34,7 +34,7 @@ struct Graph{
 
     ValueId new_value(const AT::TensorMeta& meta, ValueKind kind,std::string name );
 
-    NodeId new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,std::vector<ValueId>& attrs,std::string name ,std::string scope);
+    NodeId new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,std::vector<IValue>& attrs,std::string name ,std::string scope);
 
     Value& value(ValueId id);
     const Value& value(ValueId id)const;
@@ -47,7 +47,7 @@ struct Graph{
     void rename_value(ValueId id,std::string name);
 
     // consts
-    void set_const(ValueId id,AT::Tensor& t);
+    void set_const(ValueId id,const AT::Tensor& t);
     bool is_const(ValueId id)const;
     const AT::Tensor& get_const(ValueId id)const;
 

@@ -61,6 +61,15 @@ namespace EC
             err_msg_ = oss.str();
         }
     };
+    class TraceException : public ECException {
+    public:
+        TraceException(const std::string& msg) : ECException(msg) {
+            // 可选：拼接更详细的错误信息（比如tensor ID）
+            std::ostringstream oss;
+            oss << "[TraceException] " << msg;
+            err_msg_ = oss.str();
+        }
+    };
     class FunctionException : public ECException {
     public:
         FunctionException(const std::string& msg) : ECException(msg) {

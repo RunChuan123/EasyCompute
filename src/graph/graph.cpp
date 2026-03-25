@@ -10,7 +10,7 @@ ValueId Graph::new_value(const AT::TensorMeta& meta, ValueKind kind,std::string 
     return id;
 }
 
-NodeId Graph::new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,std::vector<ValueId>& attrs,std::string name ,std::string scope){
+NodeId Graph::new_node(TOp op,std::vector<ValueId> in,std::vector<ValueId> out,std::vector<IValue>& attrs,std::string name ,std::string scope){
     NodeId id = next_node_id++;
     nodes.push_back(Node{id,op,std::move(in),std::move(out),attrs,std::move(name), std::move(scope),{}});
     for(auto vid : nodes.back().inputs) values[vid].users.push_back(id);

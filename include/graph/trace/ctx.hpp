@@ -24,7 +24,7 @@ public:
     void bind_tensor(const AT::Tensor& t,Gr::ValueId vid);
 
     // 构建值
-    Gr::ValueId make_input(const Shape& s,DType dtype,DI device,const std::string& name="");
+    Gr::ValueId make_input(const Shape& s,DType dtype,DI device,bool req_grads,const std::string& name="");
     Gr::ValueId capture_const(const AT::Tensor& t,const std::string& name = "");
     Gr::ValueId resolve_tensor(const AT::Tensor& t);
     void mark_output(const AT::Tensor& t,const std::string& name = "");
