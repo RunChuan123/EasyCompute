@@ -1,63 +1,76 @@
 # EasyCompute/src/CMakeLists.txt
+set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 
-# 步骤1：收集所有源码文件（递归查找src下的所有.cpp/.cu文件）
-file(GLOB_RECURSE EASY_COMPUTE_SRCS 
+# 收集所有源码文件
+file(GLOB_RECURSE EASY_COMPUTE_CPP_SRCS 
      ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-     ${CMAKE_CURRENT_SOURCE_DIR}/*.cu
-    #  ${CMAKE_CURRENT_SOURCE_DIR}/*.cu)  # 若有CUDA源码（.cu）
 )
-# 步骤2：排除不需要编译的文件（可选，比如测试代码）
-# list(REMOVE_ITEM EASY_COMPUTE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp)
+file(GLOB_RECURSE EASY_COMPUTE_CUDA_SRCS
+     ${CMAKE_CURRENT_SOURCE_DIR}/*.cu
+)
 
-# 步骤3：生成库文件（推荐动态库SHARED，也可改静态库STATIC）
-add_library(easycompute SHARED ${EASY_COMPUTE_SRCS})
+# 排除不需要编译的文件 比如测试代码
+list(FILTER EASY_COMPUTE_CUDA_SRCS EXCLUDE REGEX ".*/test[^/]*$")
 
-# 步骤4：设置头文件路径（关键！让外部能找到EasyCompute.hpp）
+# 生成库文件 动态库SHARED 静态库STATIC
+add_library(easycompute SHARED ${EASY_COMPUTE_CPP_SRCS})
+
+# 设置头文件路径,让外部能找到EasyCompute.hpp）
 # PUBLIC：外部项目使用时，也能继承这些头文件路径
 target_include_directories(easycompute
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include  # 外部可见的头文件根目录
+        ${PROJECT_SOURCE_DIR}/include  
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}    # 仅源码自身可见（若src有内部头文件）
+        ${CMAKE_CURRENT_SOURCE_DIR}    # 仅源码自身可见
 )
 
-# 步骤5：若启用GPU，链接CUDA库（可选）
-if(EASY_COMPUTE_ENABLE_GPU)
-    # 查找CUDA Toolkit（CMake 3.17+推荐方式）
-    find_package(CUDAToolkit REQUIRED)
-    
-    # 链接CUDA核心库（cudart）
-    target_link_libraries(easycompute PRIVATE CUDA::cudart)
-    # 可选：链接其他CUDA库（如cublas、curand）
-    # target_link_libraries(easycompute PRIVATE CUDA::cublas CUDA::curand)
-    
-    # 定义编译宏（代码中用#ifdef EASY_COMPUTE_GPU判断）
-    target_compile_definitions(easycompute PRIVATE EASY_COMPUTE_GPU)
-    
-    # CUDA编译选项（针对.cu文件）
-    target_compile_options(easycompute
-        PRIVATE
-            # CUDA通用选项
+# 若启用GPU，链接CUDA库
+if(EASY_COMPUTE_ENABLE_CUDA)
+    # 查找CUDA Toolkit
+    find_package(CUDAToolkit QUIET)
+
+    if(CUDAToolkit_FOUND)
+        message(STATUS "CUDA found, enabling GPU support")
+
+        # 启用 CUDA 语言
+        enable_language(CUDA)
+        target_sources(easycompute PRIVATE ${EASY_COMPUTE_CU_SRCS})
+
+        # 链接 CUDA 运行时
+        target_link_libraries(easycompute PRIVATE CUDA::cudart)
+
+        # 定义宏，代码里可以用 #ifdef EASY_COMPUTE_GPU
+        target_compile_definitions(easycompute PUBLIC EC_ENABLE_CUDA)
+
+        # CUDA 编译配置（关键！让 nvcc 正确识别）
+        set_target_properties(easycompute PROPERTIES
+            CUDA_ARCHITECTURES "75;80;86;89"   # 通用显卡架构
+            CUDA_SEPARABLE_COMPILATION ON
+            POSITION_INDEPENDENT_CODE ON
+            CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        )
+
+        # CUDA 编译参数
+        target_compile_options(easycompute PRIVATE
             $<$<COMPILE_LANGUAGE:CUDA>:
-                -lineinfo,        # 调试时保留行号信息
-                -use_fast_math,   # 启用快速数学函数
-                -Xcompiler=-Wall  # 给CUDA的宿主编译器传递警告选项
+                -lineinfo
+                -use_fast_math
+                -Xcompiler=-Wall
             >
-            # Windows下CUDA编译选项
-            $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CXX_COMPILER_ID:MSVC>>:
-                -Xcompiler=/W4 /WX
-            >
-    )
+        )
+    else()
+        message(WARNING "CUDA not found, disabling GPU support")
+        set(EASY_COMPUTE_ENABLE_CUDA OFF CACHE BOOL "" FORCE)
+    endif()
 endif()
 
-# 步骤6：可选：添加编译选项（警告、优化）
 target_compile_options(easycompute
     PRIVATE
-        -Wall          # 开启所有警告（Linux/Mac）
-        -Wextra        # 额外警告
-        # -Werror        # 把警告视为错误（推荐开发阶段开启）
-        -O0            # 优化级别（生产环境用O2/O3，调试用O0）
-        # MSVC编译器选项（Windows）
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /O2>
+        -Wall
+        -Wextra
+        -O0
+        # $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /O2>
 )
+   
+
 

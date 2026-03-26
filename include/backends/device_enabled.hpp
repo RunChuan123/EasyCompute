@@ -1,3 +1,3 @@
 #pragma once
 
-#define EC_ENABLE_CUDA
+// #define EC_ENABLE_CUDA

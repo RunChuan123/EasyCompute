@@ -2,8 +2,9 @@
 
 #ifdef EC_ENABLE_CUDA
 
+#include <device_launch_parameters.h>
 
-#include "backends/cuda/cuda_runtime.cuh"
+#include "backends/cuda/cuda_runtime.hpp"
 #include <cuda_runtime.h>
 #include <stdexcept>
 

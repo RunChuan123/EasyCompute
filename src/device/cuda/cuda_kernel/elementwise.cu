@@ -4,6 +4,7 @@
 #ifdef EC_ENABLE_CUDA
 
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 #define FLOAT4(addr) (reinterpret_cast<float4*>(addr)[0])
 

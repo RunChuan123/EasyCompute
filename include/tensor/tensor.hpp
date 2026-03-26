@@ -145,11 +145,45 @@ public:
 
     size_t offset(const Shape& s)const;
 
-    template<typename T=float>
-    T& at(const Shape& index);
-    template<typename T = float>
-    const T& at(const Shape& index) const;
+    template<typename T>
+    T& _at(const Shape& index) {
+        if (get_dtype<T>() != meta.dtype) {
+            throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
+        }
+        const size_t off = offset(index);
 
+        if (meta.device.type() == DeviceType::CPU) {   
+            return data_ptr<T>()[off];
+        }
+
+        ensure_host_mirror_();
+        data_->mark_host_dirty(); // 非 const 访问按可能写入处理
+        return static_cast<T*>(data_->host_data_ptr())[off];
+    }
+
+    template<typename T>
+    const T& _at(const Shape& index) const {
+        if (get_dtype<T>() != meta.dtype) {
+            throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
+        }
+        const size_t off = offset(index);
+
+        if (meta.device.type() == DeviceType::CPU) {
+            return data_ptr<T>()[off];
+        }
+
+        ensure_host_mirror_();
+        return static_cast<const T*>(data_->host_data_ptr())[off];
+    }
+    float& at(const Shape& index){
+        switch (getDtype()) {
+            case DType::f32: return data_ptr<float>()[offset(index)];
+            case DType::f64: return (float&)data_ptr<double>()[offset(index)];
+            case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
+            default: throw std::runtime_error("unsupported dtype");
+        }
+    }
+    const float& at(const Shape& index) const;
     bool clear();
     Tensor clone();
     void copy_(Tensor& src);

@@ -4,6 +4,7 @@
 #ifdef EC_ENABLE_CUDA
 
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 // 每个线程计算 C 中一个元素
 __global__ void gemm_f32_v1(float alpha,float* A,float* B,float beta,float* C,int M,int K,int N){

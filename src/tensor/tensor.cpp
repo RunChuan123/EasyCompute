@@ -22,36 +22,7 @@ inline void require_tensor_type(DType dt, const char* where) {
     }
 }
 
-template<typename T>
-T& Tensor::at(const Shape& index) {
-    if (get_dtype<T>() != meta.dtype) {
-        throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
-    }
-    const size_t off = offset(index);
 
-    if (meta.device.type() == DeviceType::CPU) {   
-        return data_ptr<T>()[off];
-    }
-
-    ensure_host_mirror_();
-    data_->mark_host_dirty(); // 非 const 访问按可能写入处理
-    return static_cast<T*>(data_->host_data_ptr())[off];
-}
-
-template<typename T>
-const T& Tensor::at(const Shape& index) const {
-    if (get_dtype<T>() != meta.dtype) {
-        throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
-    }
-    const size_t off = offset(index);
-
-    if (meta.device.type() == DeviceType::CPU) {
-        return data_ptr<T>()[off];
-    }
-
-    ensure_host_mirror_();
-    return static_cast<const T*>(data_->host_data_ptr())[off];
-}
 size_t Tensor::offset(const Shape& s) const {
     if (s.rank() != rank()) throw ShapeException("offset rank mismatch");
 
@@ -248,7 +219,7 @@ Tensor Tensor::E(Shape s, DType dt, DI dev) {
     }
     Tensor t = Tensor::zeros(s, dt, dev);
     for (size_t i = 0; i < s[0]; ++i) {
-        t.at<float>(Shape({i, i})) = 1.0f;
+        t.at(Shape({i, i})) = 1.0f;
     }
     if (dev.type() != DeviceType::CPU) {
         t.data_->flush_host_to_device_if_needed();

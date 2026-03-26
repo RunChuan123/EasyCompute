@@ -6,8 +6,8 @@
 #include <cuda_runtime.h>
 #include <stdexcept>
 #include <memory>
-#include "device_runtime.hpp"
-#include "device_manager.hpp"
+#include "backends/device_runtime.hpp"
+#include "backends/device_manager.hpp"
 
 namespace EC::Dev
 {

@@ -7,6 +7,7 @@
 #include <memory>
 #include <stdio.h>
 #include <cassert>
+#include <device_launch_parameters.h>
 
 
 #include "tensor/api.hpp"
