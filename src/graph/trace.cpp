@@ -97,7 +97,7 @@ void set_current_tracer(TraceContext* ctx) {
 // TraceGuard
 
 TraceGuard::TraceGuard(TraceContext* ctx)
-    :prev_ctx_(current_tracer()),prev_mode_(current_trace_mode())
+    :prev_mode_(current_trace_mode()),prev_ctx_(current_tracer())
 {
     set_trace_mode(TraceMode::On);
     set_current_tracer(ctx);

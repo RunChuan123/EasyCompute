@@ -22,7 +22,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)       # 禁用编译器扩展（跨平台）
 # 可选：若项目支持GPU（CUDA），开启CUDA支持
 option(EASY_COMPUTE_ENABLE_GPU "Enable GPU support" ON)
 if(EASY_COMPUTE_ENABLE_GPU)
-    enable_language(CUDA)
+    # enable_language(CUDA)
     # 设置CUDA标准（可选）
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)

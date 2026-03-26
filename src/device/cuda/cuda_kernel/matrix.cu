@@ -1,4 +1,6 @@
 
+#include "backends/device_enabled.hpp"
+
 #ifdef EC_ENABLE_CUDA
 
 
@@ -31,8 +33,8 @@ Tensor E(Shape s,DType dt){}
 Tensor uniform(Shape s, float low, float high,DType dt){}
 Tensor normal(Shape s, float mean , float stddev,DType dt){}
 Tensor from_symbol(int32_t vid,Shape s,DType dt, bool req_grad){
-    Tensor t{std::move(s),0.0f,dt,Device::NV_GPU,req_grad};
-    t.sym_ = vid;
+    Tensor t{std::move(s),0.0f,dt,DI::cuda(),req_grad};
+    t.set_sym(vid);
     return t;
 
 }
@@ -50,10 +52,6 @@ std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype){}
 void fill_(void* data,float value,DType dt,size_t size){}
 }
 
-void register_cuda_kernels(KernelTable& kt){
-    // kt.register_kernel()
-
-}
 
 }
 

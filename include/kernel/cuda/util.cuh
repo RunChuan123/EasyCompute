@@ -1,4 +1,9 @@
 #pragma once
+#include "backends/device_enabled.hpp"
+
+#ifdef EC_ENABLE_CUDA
+
+
 
 #include <cuda_runtime.h>
 
@@ -45,3 +50,5 @@ __global__ void block_reduce_sum_f32(float* a,float* b,size_t N){
         atomicAdd(b,sum);
     }
 }
+
+#endif

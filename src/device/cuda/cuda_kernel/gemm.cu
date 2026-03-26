@@ -1,4 +1,6 @@
 
+#include "backends/device_enabled.hpp"
+
 #ifdef EC_ENABLE_CUDA
 
 #include <cuda_runtime.h>

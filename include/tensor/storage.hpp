@@ -118,7 +118,8 @@ struct Storage{
         }
         if(host_valid)return;
 
-        auto dm = DM::get_instance();
+        // WARN: 谨记 auto 不会推到为引用！！！
+        auto& dm = DM::get_instance();
         auto s = dm.createStream(device,0);
         dm.memcpyAsync(host_ptr,DI::cpu(),ptr,device,nbytes,s);
         dm.synchronize(s);
@@ -184,7 +185,7 @@ struct Storage{
                         break;
                 }
             }
-            if(host_ptr && owns_memory){
+            if(host_ptr && host_owns_memory){
 #ifdef __cpp_aligned_new
             ::operator delete(host_ptr, std::align_val_t(align));
 #else

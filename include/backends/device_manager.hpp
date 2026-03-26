@@ -14,6 +14,12 @@ namespace Dev{
 
 struct DeviceManager {
 public:
+
+    DeviceManager(const DeviceManager&) = delete;
+    DeviceManager& operator=(const DeviceManager&) = delete;
+    DeviceManager(DeviceManager&&) = delete;
+    DeviceManager& operator=(DeviceManager&&) = delete;
+    
     static DeviceManager& get_instance() {
         static DeviceManager dm;
         return dm;

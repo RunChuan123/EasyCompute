@@ -100,10 +100,13 @@ void inverse_kernel(KernelContext& ctx){
 
 }
 
-std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype)
-{return std::make_shared<Buffer>(bytes,dtype,DI::cpu());}
+std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype){
+    // return std::make_shared<Buffer>(bytes,dtype,DI::cpu());
+    return Buffer::make(bytes,dtype,DI::cpu());
+}
+
 void fill_(void* data,float value,DType dt,size_t size){
-    // assert(dt == DType::f32);
+    assert(dt == DType::f32);
     float* p = static_cast<float*>(data);
     for(size_t i=0;i<size;i++)p[i]=value;
 }

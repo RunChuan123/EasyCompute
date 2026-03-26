@@ -1,11 +1,16 @@
 #pragma once
+
+#include "backends/device_enabled.hpp"
+
+#ifdef EC_ENABLE_CUDA
+
 #include <memory>
 #include <cassert>
 
 #include "tensor/tensor.hpp"
 #include "tensor/shape.hpp"
 #include "tensor/dtype.hpp"
-#include "tensor/device/device.hpp"
+#include "tensor/device.hpp"
 
 namespace EC::AT{
 namespace NV{
@@ -30,3 +35,5 @@ void fill_(void* data,float value,DType dt,size_t size);
 
 }
 }
+
+#endif
