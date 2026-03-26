@@ -2,6 +2,7 @@
 #include <random>
 #include <chrono>
 #include <mutex>
+#include <algorithm>
 
 
 class RandomGenerator{

@@ -34,7 +34,7 @@ if(EASY_COMPUTE_ENABLE_CUDA)
 
         # 启用 CUDA 语言
         enable_language(CUDA)
-        target_sources(easycompute PRIVATE ${EASY_COMPUTE_CU_SRCS})
+        target_sources(easycompute PRIVATE ${EASY_COMPUTE_CUDA_SRCS})
 
         # 链接 CUDA 运行时
         target_link_libraries(easycompute PRIVATE CUDA::cudart)
@@ -69,6 +69,7 @@ target_compile_options(easycompute
         -Wall
         -Wextra
         -O0
+        -Wunused-parameter
         # $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /O2>
 )
    

@@ -96,7 +96,7 @@ void CudaDeviceRuntime::deallocateAsync(DI dev, void* ptr, MemoryType kind, Stre
 #endif
 }
 
-StreamHandle CudaDeviceRuntime::createStream(DI dev, int priority = 0) {
+StreamHandle CudaDeviceRuntime::createStream(DI dev, int priority) {
     setCurrentDevice(dev);
     cudaStream_t s = nullptr;
 
@@ -125,7 +125,7 @@ void CudaDeviceRuntime::synchronizeStream(StreamHandle stream)  {
     cudaCheck(cudaStreamSynchronize(toCudaStream(stream)), "cudaStreamSynchronize failed");
 }
 
-EventHandle CudaDeviceRuntime::createEvent(DI dev, bool timing = false)  {
+EventHandle CudaDeviceRuntime::createEvent(DI dev, bool timing )  {
     setCurrentDevice(dev);
     cudaEvent_t ev = nullptr;
     unsigned flags = timing ? cudaEventDefault : cudaEventDisableTiming;

@@ -95,9 +95,9 @@ public:
     inline void set_requires_grad(bool i) { meta.requires_grad = i; }
 
     template<typename T>
-    T& operator[](size_t index) {return at<T>(Shape({index}));}
+    T& operator[](size_t index) {return at(Shape({index}));}
     template<typename T>
-    const T& operator[](size_t index) const {return at<T>(Shape({index}));}
+    const T& operator[](size_t index) const {return at(Shape({index}));}
 
     inline const Buffer* buffer_ptr() const { return data_.get(); }
     inline std::shared_ptr<Buffer> buffer() const { return data_; }
@@ -175,14 +175,8 @@ public:
         ensure_host_mirror_();
         return static_cast<const T*>(data_->host_data_ptr())[off];
     }
-    float& at(const Shape& index){
-        switch (getDtype()) {
-            case DType::f32: return data_ptr<float>()[offset(index)];
-            case DType::f64: return (float&)data_ptr<double>()[offset(index)];
-            case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
-            default: throw std::runtime_error("unsupported dtype");
-        }
-    }
+    float& at(const Shape& index);
+    
     const float& at(const Shape& index) const;
     bool clear();
     Tensor clone();

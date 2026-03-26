@@ -34,6 +34,22 @@ size_t Tensor::offset(const Shape& s) const {
     }
     return linear;
 }
+float& Tensor::at(const Shape& index){
+    switch (getDtype()) {
+        case DType::f32: return data_ptr<float>()[offset(index)];
+        case DType::f64: return (float&)data_ptr<double>()[offset(index)];
+        case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
+        default: throw std::runtime_error("unsupported dtype");
+    }
+}
+const float& Tensor::at(const Shape& index) const{
+    switch (getDtype()) {
+        case DType::f32: return data_ptr<float>()[offset(index)];
+        case DType::f64: return (float&)data_ptr<double>()[offset(index)];
+        case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
+        default: throw std::runtime_error("unsupported dtype");
+    }
+}
 /** 
  * 清理 buffer 和 grad 数据
  */
