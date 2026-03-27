@@ -4,7 +4,7 @@
 
 #include <device_launch_parameters.h>
 
-#include "backends/cuda/cuda_runtime.hpp"
+#include "backends/cuda/cuda_runtime.cuh"
 #include <cuda_runtime.h>
 #include <stdexcept>
 

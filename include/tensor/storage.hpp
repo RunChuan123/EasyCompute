@@ -38,29 +38,33 @@ struct Storage{
         std::lock_guard<std::mutex> lock(mtx_);
         if (ptr != nullptr || nbytes == 0) return;
 
-        switch (device.type()) {
-            case DeviceType::CPU: {
-#ifdef __cpp_aligned_new
-                ptr = ::operator new(nbytes, std::align_val_t(align));
-#else
-                ptr = std::malloc(nbytes);
-#endif
-                if (!ptr) throw std::bad_alloc();
-                owns_memory = true;
-                break;
-            }
+//         switch (device.type()) {
+//             case DeviceType::CPU: {
+// #ifdef __cpp_aligned_new
+//                 ptr = ::operator new(nbytes, std::align_val_t(align));
+// #else
+//                 ptr = std::malloc(nbytes);
+// #endif
+//                 if (!ptr) throw std::bad_alloc();
+//                 owns_memory = true;
+//                 break;
+//             }
 
-            case DeviceType::CUDA: {
-                auto& dm = Dev::DeviceManager::get_instance();
-                ptr = dm.allocate(device, nbytes, MemoryType::Device);
-                if (!ptr) throw BufferException("Storage allocate CUDA failed");
-                owns_memory = true;
-                break;
-            }
-
-            default:
-                throw BufferException("Storage allocate: unsupported device");
+//             case DeviceType::CUDA: {
+        auto& dm = Dev::DeviceManager::get_instance();
+        MemoryType mt = MemoryType::Host;
+        if (device.type() ==  DeviceType::CUDA){
+            mt = MemoryType::Device;
         }
+        ptr = dm.allocate(device, nbytes, mt);
+        if (!ptr) throw BufferException("Storage allocate CUDA failed");
+        owns_memory = true;
+            //     break;
+            // }
+
+            // default:
+            //     throw BufferException("Storage allocate: unsupported device");
+        // }
     }
     void allocateAsync(Dev::StreamHandle stream) {
         std::lock_guard<std::mutex> lock(mtx_);

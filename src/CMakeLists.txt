@@ -1,6 +1,7 @@
 # EasyCompute/src/CMakeLists.txt
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
-
+# include_directories(/usr/local/cuda/include)
+# link_directories(/usr/local/cuda/lib64)
 # 收集所有源码文件
 file(GLOB_RECURSE EASY_COMPUTE_CPP_SRCS 
      ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
@@ -34,6 +35,8 @@ if(EASY_COMPUTE_ENABLE_CUDA)
 
         # 启用 CUDA 语言
         enable_language(CUDA)
+        include_directories(/usr/local/cuda/include)
+        link_directories(/usr/local/cuda/lib64)
         target_sources(easycompute PRIVATE ${EASY_COMPUTE_CUDA_SRCS})
 
         # 链接 CUDA 运行时

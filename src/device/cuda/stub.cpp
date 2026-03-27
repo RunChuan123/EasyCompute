@@ -1,7 +1,7 @@
 #include <cstdint>
 
 
-#include "backends/cuda/cuda_runtime.hpp"
+#include "backends/cuda/cuda_runtime.cuh"
 #include "kernel/tensor_op.hpp"
 #include "kernel/cuda/kernel.cuh"
 

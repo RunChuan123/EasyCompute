@@ -14,12 +14,14 @@ using namespace EC;
 struct T{};
 
 int main(){
-    AT::register_all_kernels();
-    AT::Tensor a = AT::Tensor::normal({2,2});
+    EC_INIT();
+    // AT::register_all_kernels();
+    AT::Tensor a = AT::Tensor::normal({2,2},1.0,2.0,DType::f32,DI::cuda());
+    a.print();
     AT::Tensor b = AT::Tensor::normal({2,1});
     // auto c = AT::mul(a,b,AT::Tensor::ones({2,1}),2,1);
 
-    a.print(6,6);
+    // a.print(6,6);
     b.print(6,6);
     // c.print(6,6);
 

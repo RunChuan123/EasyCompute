@@ -181,7 +181,7 @@ void CpuDeviceRuntime::memcpyAsync(void* dst, DI dst_dev,
                                    const void* src, DI src_dev,
                                    size_t bytes, StreamHandle stream) {
     (void)stream;
-    setCurrentDevice(dst_dev);
+    setCurrentDevice(src_dev);
 
     // 仅支持CPU<->CPU拷贝
     if (dst_dev.type() != DeviceType::CPU || src_dev.type() != DeviceType::CPU) {
@@ -199,11 +199,6 @@ void CpuDeviceRuntime::memcpyAsync(void* dst, DI dst_dev,
         // 这里可扩展：从stream中提取绑定的Event并record
         // 简化：假设stream关联的Event已传入，此处仅做示例
     }
-}
-
-// 注册CPU后端
-void registerCpuBackend() {
-    DM::get_instance().registerRuntime(std::make_unique<CpuDeviceRuntime>());
 }
 
 } // namespace EC::Dev

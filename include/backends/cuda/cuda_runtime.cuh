@@ -74,7 +74,7 @@ public:
                      size_t bytes, StreamHandle stream) override ;
 };
 
-inline void registerBackends() {
+inline void registerCUDABackends() {
     DM::get_instance().registerRuntime(std::make_unique<CudaDeviceRuntime>());
     // 以后还能注册 CpuDeviceRuntime / AscendDeviceRuntime
 }

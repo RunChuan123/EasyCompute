@@ -84,7 +84,11 @@ public:
     void memcpyAsync(void* dst, DI dst_dev,
                      const void* src, DI src_dev,
                      size_t bytes, StreamHandle stream) {
-        runtime(dst_dev.type()).memcpyAsync(dst, dst_dev, src, src_dev, bytes, stream);
+        if(dst_dev.type() == DeviceType::CUDA || src_dev.type() == DeviceType::CUDA){
+            runtime(DeviceType::CUDA).memcpyAsync(dst, dst_dev, src, src_dev, bytes, stream);
+        }else{
+            runtime(DeviceType::CPU).memcpyAsync(dst, dst_dev, src, src_dev, bytes, stream);
+        }
     }
 
     void synchronize(StreamHandle stream) {

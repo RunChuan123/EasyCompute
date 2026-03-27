@@ -70,7 +70,8 @@ private:
     void waitEventInternal(CpuEventData* event_data);
 };
 
-// 注册CPU后端
-void registerCpuBackend();
+inline void registerCPUBackend() {
+    DM::get_instance().registerRuntime(std::make_unique<CpuDeviceRuntime>());
+}
 
-} // namespace EC::Dev
+}

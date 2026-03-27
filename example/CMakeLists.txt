@@ -65,4 +65,7 @@
 # endif()
 
 add_executable(exe_main main.cpp)
+target_include_directories(exe_main PRIVATE /usr/local/cuda/include)
+# 链接 CUDA 库（如果用到 runtime API）
+# target_link_libraries(exe_main PRIVATE cudart)
 target_link_libraries(exe_main PRIVATE easycompute)
