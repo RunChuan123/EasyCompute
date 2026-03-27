@@ -22,5 +22,6 @@ Tensor from_symbol(int32_t vid,Shape s,DType dt, bool req_grad);
 std::shared_ptr<Buffer> allocate_(size_t bytes,DType dtype);
 void fill_(void* data,float value,DType dt,size_t size);
 
+// void add_into_imlp(const Tensor& a,const Tensor& b,Tensor& out);
 }
 }

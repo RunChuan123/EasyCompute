@@ -23,3 +23,5 @@
         }
     ]
 }
+
+// apt update && apt install gdb -y

@@ -129,12 +129,172 @@ void Tensor::fill_(float value){
     data_->flush_host_to_device_if_needed();
 }
 
+// void Tensor::print(size_t width, size_t prec) const {
+//     std::ostringstream oss;
+//     oss << "Tensor(shape=" << meta.shape.to_string()
+//         << ", dtype=" << name_dtype(getDtype())
+//         << ", device=" << getDevice().to_string()
+//         << ", id=" << getID()
+//         << ")\n";
+
+//     if (empty()) {
+//         oss << "<empty>";
+//         std::cout << oss.str() << std::endl;
+//         return;
+//     }
+
+//     if (meta.dtype != DType::f32) {
+//         oss << "<print only implemented for f32 currently>";
+//         std::cout << oss.str() << std::endl;
+//         return;
+//     }
+
+//     const float* p = nullptr;
+//     if (meta.device.type() == DeviceType::CPU) {
+//         p = data_ptr<float>();
+//     } else {
+//         ensure_host_mirror_();
+//         p = static_cast<const float*>(data_->host_data_ptr());
+//     }
+
+//     oss << std::fixed << std::setprecision(static_cast<int>(prec));
+
+//     if (rank() == 0 || numel() == 1) {
+//         oss << p[0];
+//     } else if (rank() == 1) {
+//         oss << "[";
+//         for (size_t i = 0; i < numel(); ++i) {
+//             if (i) oss << ", ";
+//             oss << std::setw(static_cast<int>(width)) << p[i];
+//         }
+//         oss << "]";
+//     } else if (rank() == 2) {
+//         size_t rows = meta.shape[0];
+//         size_t cols = meta.shape[1];
+//         oss << "[\n";
+//         for (size_t r = 0; r < rows; ++r) {
+//             oss << "  [";
+//             for (size_t c = 0; c < cols; ++c) {
+//                 if (c) oss << ", ";
+//                 oss << std::setw(static_cast<int>(width)) << p[r * cols + c];
+//             }
+//             oss << "]";
+//             if (r + 1 != rows) oss << ",";
+//             oss << "\n";
+//         }
+//         oss << "]";
+//     } else {
+//         oss << "[";
+//         size_t limit = std::min<size_t>(numel(), 16);
+//         for (size_t i = 0; i < limit; ++i) {
+//             if (i) oss << ", ";
+//             oss << p[i];
+//         }
+//         if (numel() > limit) oss << ", ...";
+//         oss << "]";
+//     }
+
+//     std::cout << oss.str() << std::endl;
+// }
+
+// void indent(size_t n) {
+//     size_t spaces = 2 + n * 2;
+//     for (size_t k = 0; k < spaces; k++)
+//         std::cout << " ";
+// }
+
+// void print_value(const Tensor& t, const std::vector<size_t>& index, size_t width = 4, size_t prec = 2) {
+//     std::cout << std::setw(width) << std::fixed << std::setprecision(prec) << t.at(index);
+// }
+
+// // 核心递归打印
+// void print_naive(const Tensor& t, size_t shape_idx, std::vector<size_t>& index, size_t width = 4, size_t prec = 2) {
+//     size_t cur_dim = t.getShape().dims[shape_idx];
+//     for (size_t i = 0; i < cur_dim; i++) {
+//         index[shape_idx] = i;
+//         if (shape_idx == t.getShape().dims.size() - 1) {
+//             print_value(t, index, width, prec);
+//             if (i != cur_dim - 1)
+//                 std::cout << " ";
+//         } else {
+//             std::cout << "[ ";
+//             print_naive(t, shape_idx + 1, index, width, prec);
+//             std::cout << " ]";
+
+//             if (i != cur_dim - 1) {
+//                 std::cout << ",";
+//                 std::cout << "\n";
+//                 indent(shape_idx);
+//             }
+//         }
+//     }
+// }
+
+
+// void Tensor::print(size_t width, size_t prec) const {
+//     // 头部信息
+//     std::cout << "Tensor(shape=" << getShape().to_string()
+//               << ", dtype=" << name_dtype(getDtype())
+//               << ", device=" << getDevice().to_string() << ")\n";
+
+//     if (empty()) {
+//         std::cout << "<empty>" << std::endl;
+//         return;
+//     }
+
+//     std::vector<size_t> index(getShape().dims.size(), 0);
+//     std::cout << "[ ";
+//     print_naive(*this, 0, index, width, prec);
+//     std::cout << " ]\n";
+// }
+
+void indent(size_t n) {
+    size_t spaces = 2 + n * 2;
+    for (size_t k = 0; k < spaces; k++)
+        std::cout << " ";
+}
+
+void print_value(float val, size_t width = 4, size_t prec = 2) {
+    std::cout << std::setw(width) << std::fixed << std::setprecision(prec) << val;
+}
+
+void print_naive(const float* p, const Shape& shape, size_t shape_idx, std::vector<size_t>& index, size_t width = 4, size_t prec = 2) {
+    size_t cur_dim = shape.dims[shape_idx];
+    for (size_t i = 0; i < cur_dim; i++) {
+        index[shape_idx] = i;
+
+        if (shape_idx == shape.dims.size() - 1) {
+            // 计算偏移量
+            size_t offset = 0;
+            size_t stride = 1;
+            for (int d = index.size() - 1; d >= 0; d--) {
+                offset += index[d] * stride;
+                stride *= shape.dims[d];
+            }
+            // 直接用指针取值
+            print_value(p[offset], width, prec);
+            if (i != cur_dim - 1)
+                std::cout << " ";
+        } else {
+            std::cout << "[ ";
+            print_naive(p, shape, shape_idx + 1, index, width, prec);
+            std::cout << " ]";
+
+            if (i != cur_dim - 1) {
+                std::cout << ",";
+                std::cout << "\n";
+                indent(shape_idx);
+            }
+        }
+    }
+}
+
 void Tensor::print(size_t width, size_t prec) const {
     std::ostringstream oss;
     oss << "Tensor(shape=" << meta.shape.to_string()
-        << ", dtype=" << static_cast<int>(meta.dtype)
-        << ", device=" << meta.device.to_string()
-        << ", id=" << id_.to_string()
+        << ", dtype=" << name_dtype(getDtype())
+        << ", device=" << getDevice().to_string()
+        << ", id=" << getID()
         << ")\n";
 
     if (empty()) {
@@ -143,12 +303,9 @@ void Tensor::print(size_t width, size_t prec) const {
         return;
     }
 
-    if (meta.dtype != DType::f32) {
-        oss << "<print only implemented for f32 currently>";
-        std::cout << oss.str() << std::endl;
-        return;
-    }
+    std::cout << oss.str();
 
+    // 取指针 
     const float* p = nullptr;
     if (meta.device.type() == DeviceType::CPU) {
         p = data_ptr<float>();
@@ -157,44 +314,11 @@ void Tensor::print(size_t width, size_t prec) const {
         p = static_cast<const float*>(data_->host_data_ptr());
     }
 
-    oss << std::fixed << std::setprecision(static_cast<int>(prec));
 
-    if (rank() == 0 || numel() == 1) {
-        oss << p[0];
-    } else if (rank() == 1) {
-        oss << "[";
-        for (size_t i = 0; i < numel(); ++i) {
-            if (i) oss << ", ";
-            oss << std::setw(static_cast<int>(width)) << p[i];
-        }
-        oss << "]";
-    } else if (rank() == 2) {
-        size_t rows = meta.shape[0];
-        size_t cols = meta.shape[1];
-        oss << "[\n";
-        for (size_t r = 0; r < rows; ++r) {
-            oss << "  [";
-            for (size_t c = 0; c < cols; ++c) {
-                if (c) oss << ", ";
-                oss << std::setw(static_cast<int>(width)) << p[r * cols + c];
-            }
-            oss << "]";
-            if (r + 1 != rows) oss << ",";
-            oss << "\n";
-        }
-        oss << "]";
-    } else {
-        oss << "[";
-        size_t limit = std::min<size_t>(numel(), 16);
-        for (size_t i = 0; i < limit; ++i) {
-            if (i) oss << ", ";
-            oss << p[i];
-        }
-        if (numel() > limit) oss << ", ...";
-        oss << "]";
-    }
-
-    std::cout << oss.str() << std::endl;
+    std::vector<size_t> index(meta.shape.dims.size(), 0);
+    std::cout << "[ ";
+    print_naive(p, meta.shape, 0, index, width, prec);
+    std::cout << " ]\n";
 }
 
 Tensor Tensor::scalar(float value, DType dt, DI dev) {

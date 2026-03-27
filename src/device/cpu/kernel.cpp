@@ -121,11 +121,40 @@ Tensor add_imlp(const Tensor& a,const Tensor& b){
     }
     return out;
 } 
+void add_into_imlp(const Tensor& a,const Tensor& b,Tensor& out){
+
+    auto [pa,pb,po] = get_data_ptrs_17<float>(a,b,out);
+    if(!pa || !pb || !po) throw DataException("return pointer nullptr");
+    for(size_t i=0;i < a.size();i++){
+        po[i] = pa[i] + pb[i];
+    }
+} 
+
 void add_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);
-    Tensor out = add_imlp(a,b);
+    // TODO 基本检查先省略
+
+    Tensor out{a.getShape(),0.0f,a.getDtype(),a.getDevice()};
+    auto& exec = Task::AsyncTaskExecutor::get_instance();
+
+    std::string task_name = "ew_add_" + a.id().to_string() + "_" + b.id().to_string();
+    exec.registerTask(
+        task_name,
+        Task::TaskType::Compute,
+        Task::Priority::Normal,
+        0,
+        a.getDevice(),
+        {},
+        [a,b,&out](){
+           add_into_imlp(a,b,out);
+           return true;
+        }
+    );
+    exec.executeUntilIdle();
+    exec.waitTask(task_name);
     ctx.set_output(0,out);
+
 }
 
 Tensor sub_imlp(const Tensor& a,const Tensor& b){
@@ -159,12 +188,6 @@ void mul_into_impl(const Tensor& a, const Tensor& b, Tensor& out) {
     }
 }
 
-// void mul_kernel(KernelContext& ctx){
-//     Tensor a = ctx.input<Tensor>(0);
-//     Tensor b = ctx.input<Tensor>(1);
-//     Tensor out = mul_imlp(a,b);
-//     ctx.set_output(0,out);
-// }
 void mul_kernel(KernelContext& ctx){
     Tensor a = ctx.input<Tensor>(0);
     Tensor b = ctx.input<Tensor>(1);

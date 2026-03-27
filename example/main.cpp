@@ -15,15 +15,22 @@ struct T{};
 
 int main(){
     EC_INIT();
-    // AT::register_all_kernels();
-    AT::Tensor a = AT::Tensor::normal({2,2},1.0,2.0,DType::f32,DI::cuda());
-    a.print();
-    AT::Tensor b = AT::Tensor::normal({2,1});
-    // auto c = AT::mul(a,b,AT::Tensor::ones({2,1}),2,1);
 
-    // a.print(6,6);
+    AT::Tensor a = AT::Tensor::normal({2,3});
+    
+    AT::Tensor b = AT::Tensor::normal({2,3});
+
+    auto c = a + b;
+    // AT::add_into
+    a.print(6,6);
     b.print(6,6);
+    c.print(6,6);
+    // AT::CPU::add_into_imlp(a,b,c);
     // c.print(6,6);
+
+
+
+
 
     // auto [g, out] = Tr::trace([&] {
     // auto x = Tr::input({2, 3}, DType::Float32, "x");

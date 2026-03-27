@@ -10,6 +10,7 @@
 #include "buffer.hpp"
 #include "shape.hpp"
 #include "../util/err.hpp"
+#include "util/logger.hpp"
 
 namespace EC::AT{
 
@@ -77,11 +78,12 @@ public:
     Tensor(Tensor&&) noexcept = default;
     Tensor& operator=(const Tensor&) = default;
     Tensor& operator=(Tensor&&) noexcept = default;
-    ~Tensor() = default;
+    ~Tensor() =default;
 
     Shape getShape() const { return meta.shape; }
     DType getDtype() const { return meta.dtype; }
     DI getDevice() const { return meta.device; }
+    std::string getID()const{return id_.to_string();}
     TensorMeta getMeta()const {return meta;}
     size_t numel() const { return meta.numel(); }
     bool requires_grad() const { return meta.requires_grad; }
@@ -123,14 +125,6 @@ public:
     static Tensor likes(Tensor& rhs,float v=0.0f);
     // static Tensor Empty(Shape s,DType dt=DType::f32, DI dev = DI::cpu());
     static Tensor from_symbol(ValueId vid,Shape s,DType dt=DType::f32, DI dev = DI::cpu(), bool req_grad=false);// ?
-    // id_ = make_tensor_id()
-    // data_ = nullptr
-    // shape_ = s
-    // dtype_ = dt
-    // device_ = dev
-    // requires_grad_ = requires_grad
-    // sym_ = vid
-    // 上三角，下三角，等等
 
     inline Tensor view(Shape s) const;
 
@@ -187,14 +181,20 @@ public:
     void to(DType dt);
     template<typename T>
     inline T* data_ptr() {
-        if (!data_) return nullptr;
+        if (!data_) {
+            LOG_WARN("data_ptr try to get pointer from NULL");
+            return nullptr;
+        }
         data_->flush_host_to_device_if_needed();
         return static_cast<T*>(data_->data_ptr());
     }
 
     template<typename T>
     inline const T* data_ptr() const {
-        if (!data_) return nullptr;
+        if (!data_) {
+            LOG_WARN("data_ptr try to get pointer from NULL");
+            return nullptr;
+        }
         data_->flush_host_to_device_if_needed();
         return static_cast<const T*>(data_->data_ptr());
     }
@@ -218,9 +218,6 @@ private:
     void ensure_storage_();
     void ensure_host_mirror_() const;
 
-    
-
-    
 
 };
 

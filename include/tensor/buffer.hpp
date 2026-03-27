@@ -29,7 +29,7 @@ struct Buffer {
            DType dt,
            DI dev,
            bool contiguous = true)
-        : storage(std::move(st)),
+        : storage(st),
           offset_bytes(offset),
           visible_bytes(bytes),
           dtype(dt),

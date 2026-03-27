@@ -5,6 +5,9 @@
 #include "backends/cuda/cuda_runtime.cuh"
 #include "backends/cpu/cpu_runtime.hpp"
 
+#include "kernel/tensor_op.hpp"
+#include "kernel/cpu/kernel.hpp"
+
 namespace EC
 {
     

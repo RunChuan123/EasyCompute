@@ -43,6 +43,15 @@ namespace EC
             err_msg_ = oss.str();
         }
     };
+    class DataException : public ECException {
+    public:
+        DataException(const std::string& msg) : ECException(msg) {
+            // 可选：拼接更详细的错误信息（比如tensor ID）
+            std::ostringstream oss;
+            oss << "[DataException] "  << msg;
+            err_msg_ = oss.str();
+        }
+    };
     class TypeException : public ECException {
     public:
         TypeException(const std::string& msg) : ECException(msg) {
