@@ -90,5 +90,5 @@
         "${workspaceFolder}/**"
     ],
     "C_Cpp.errorSquiggles": "enabled",
-    "cmake.sourceDirectory": "/root/autodl-tmp/EasyCompute"
+    "cmake.sourceDirectory": "/Users/liubingshuo/Desktop/code/cpp/newp/np6/EasyCompute"
 }

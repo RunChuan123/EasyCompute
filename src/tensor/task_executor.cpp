@@ -384,7 +384,9 @@ bool AsyncTaskExecutor::isTaskFailed(const std::string& task_name) {
 }
 
 void AsyncTaskExecutor::clearAllTasks() {
+
     std::lock_guard<std::mutex> lock(mtx_);
+
 
     ReadyQueue empty_queue;
     ready_queue_.swap(empty_queue);

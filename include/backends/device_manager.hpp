@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <iostream>
 #include <unordered_map>
 
 #include "tensor/device.hpp"
 #include "abstract.hpp"
 #include "device_runtime.hpp"
+#include "util/err.hpp"
 
 
 namespace EC{
@@ -21,21 +23,41 @@ public:
     DeviceManager& operator=(DeviceManager&&) = delete;
     
     static DeviceManager& get_instance() {
-        static DeviceManager dm;
-        return dm;
+        static DeviceManager* dm = new DeviceManager();
+        return *dm;
     }
 
     void registerRuntime(std::unique_ptr<IDeviceRuntime> runtime) {
         runtimes_[runtime->device().type()] = std::move(runtime);
+        std::cerr << "register DeviceManager this = " << this << "\n";
     }
 
+    // IDeviceRuntime& runtime(DeviceType dev) {
+    //     auto it = runtimes_.find(dev);
+    //     if (it == runtimes_.end()) {
+    //         throw std::runtime_error("runtime not registered");
+    //     }
+    //     return *(it->second);
+    // }
     IDeviceRuntime& runtime(DeviceType dev) {
+        if (runtimes_.empty() && runtimes_.bucket_count() == 0) {
+            throw DeviceException("DeviceManager contains no device");
+        }
+        std::cerr << "query dev = " << static_cast<int>(dev) << "\n";
+        std::cerr << "DeviceManager this = " << this << "\n";
+        std::cerr << "map keys: ";
+        for (const auto& kv : runtimes_) {
+            std::cerr << static_cast<int>(kv.first) << " ";
+        }
+        std::cerr << "\n";
+
         auto it = runtimes_.find(dev);
         if (it == runtimes_.end()) {
             throw std::runtime_error("runtime not registered");
         }
         return *(it->second);
     }
+
 
     void* allocate(DI dev, size_t bytes, MemoryType kind) {
         return runtime(dev.type()).allocate(dev, bytes, kind);

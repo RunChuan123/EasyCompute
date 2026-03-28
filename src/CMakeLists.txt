@@ -1,5 +1,5 @@
 # EasyCompute/src/CMakeLists.txt
-set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
+# set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 # include_directories(/usr/local/cuda/include)
 # link_directories(/usr/local/cuda/lib64)
 # 收集所有源码文件

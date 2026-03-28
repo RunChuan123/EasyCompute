@@ -35,9 +35,15 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)  # 静态库
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+#     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+#     add_link_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+# endif()
+
 add_subdirectory(src)
 
 add_subdirectory(example)  
 
 # 可选：添加示例/测试程序（比如测试Buffer、Shape等）
 # add_subdirectory(examples)
+

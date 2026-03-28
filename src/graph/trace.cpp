@@ -111,7 +111,7 @@ template <class Fn>
 auto trace(Fn&& fn) -> std::pair< Gr::Graph, decltype(fn())>{
     Gr::Graph g;
     TraceContext ctx(g);
-    TraceGuard guard(ctx);
+    TraceGuard guard(&ctx);
 
     auto out = fn();
     ctx.mark_output(out);

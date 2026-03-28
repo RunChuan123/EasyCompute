@@ -1,27 +1,48 @@
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Linux CUDA Debug",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "/root/autodl-tmp/EasyCompute/build/bin/exe_main",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
-    ]
-}
+// {
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "EasyCompute Debug",
+//             "type": "cppdbg",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/build/bin/exe_main",
+//             "cwd": "${workspaceFolder}",
+//             "stopAtEntry": false,
+//             "externalConsole": false,
 
+//             "linux": {
+//                 "MIMode": "gdb",
+//                 "miDebuggerPath": "/usr/bin/gdb"
+//             },
+
+//             "windows": {
+//                 "program": "${workspaceFolder}/build/bin/exe_main.exe",
+//                 "MIMode": "gdb",
+//                 "miDebuggerPath": "C:/MinGW/bin/gdb.exe"
+//             }
+//         },
+
+//         {
+//             "name": "EasyCompute Debug (macOS)",
+//             "type": "lldb",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/build/bin/exe_main",
+//             "cwd": "${workspaceFolder}",
+//             "stopOnEntry": false
+//         }
+//     ]
+// }
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "EasyCompute Debug (macOS)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/exe_main",
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false
+    }
+  ]
+}
 // apt update && apt install gdb -y
