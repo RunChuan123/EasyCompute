@@ -135,26 +135,26 @@ inline void check_dtype_match(DType dt){
     }
 }
 
-template<typename F>
-decltype(auto) dispatch_dtype(DType dt,F&& f){
-    switch (dt)
-    {
-        case DType::f32: return f.template operator()<float>();
-        case DType::f64: return f.template operator()<double>();
-        case DType::f16: return f.template operator()<_Float16>();
-#ifdef EC_ENABLE_CUDA
-        case DType::bf16: return f.template operator()<__nv_float16>();
-#endif
-        case DType::i32: return f.template operator()<int32_t>();
-        case DType::i16: return f.template operator()<int16_t>();
-        case DType::i8: return f.template operator()<int8_t>();
-        case DType::u8: return f.template operator()<uint8_t>();
-        case DType::bool_: return f.template operator()<bool>();
+// template<typename F>
+// decltype(auto) dispatch_dtype(DType dt,F&& f){
+//     switch (dt)
+//     {
+//         case DType::f32: return f.template operator()<float>();
+//         case DType::f64: return f.template operator()<double>();
+//         case DType::f16: return f.template operator()<_Float16>();
+// #ifdef EC_ENABLE_CUDA
+//         case DType::bf16: return f.template operator()<__nv_float16>();
+// #endif
+//         case DType::i32: return f.template operator()<int32_t>();
+//         case DType::i16: return f.template operator()<int16_t>();
+//         case DType::i8: return f.template operator()<int8_t>();
+//         case DType::u8: return f.template operator()<uint8_t>();
+//         case DType::bool_: return f.template operator()<bool>();
 
         
-        default: throw DTypeException("unknow type");
-    }
-}
+//         default: throw DTypeException("unknow type");
+//     }
+// }
 
 
 } // namespace EC

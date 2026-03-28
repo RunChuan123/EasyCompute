@@ -1,3 +1,11 @@
+/**
+ * Storage 只负责拥有资源，
+ * 重点在 一块内存
+ * 在哪个设备，内存大小，对齐，分配释放
+ * 可以有内存基本 copy，memset 之类的
+ */
+
+
 #pragma once 
 
 #include <cstddef>
@@ -19,14 +27,6 @@ struct Storage{
     size_t nbytes = 0;
     DI device = DI::cpu();
     size_t align = 64;
-    bool owns_memory = false;
-
-    // host mem mirror
-
-    void* host_ptr = nullptr;
-    bool host_owns_memory = false;
-    bool host_valid = false; // mirror 是否跟 ptr 一致
-    bool host_dirty = false; // mirror 是否被修改过，是否需要刷回 device
 
     mutable std::mutex mtx_;
 
@@ -37,34 +37,19 @@ struct Storage{
     void allocate() {
         std::lock_guard<std::mutex> lock(mtx_);
         if (ptr != nullptr || nbytes == 0) return;
-
-//         switch (device.type()) {
-//             case DeviceType::CPU: {
-// #ifdef __cpp_aligned_new
-//                 ptr = ::operator new(nbytes, std::align_val_t(align));
-// #else
-//                 ptr = std::malloc(nbytes);
-// #endif
-//                 if (!ptr) throw std::bad_alloc();
-//                 owns_memory = true;
-//                 break;
-//             }
-
-//             case DeviceType::CUDA: {
         auto& dm = Dev::DeviceManager::get_instance();
         MemoryType mt = MemoryType::Host;
+        switch (device.type()){ // TODO: 暂时先这样，cuda 也可以申请 cpu 上的内存，
+            case DeviceType::CPU: mt = MemoryType::Host;break;
+            case DeviceType::CUDA: mt = MemoryType::Device;break;
+            case DeviceType::ASCEND : mt = MemoryType::Device;break;
+        }
         if (device.type() ==  DeviceType::CUDA){
             mt = MemoryType::Device;
         }
         ptr = dm.allocate(device, nbytes, mt);
         if (!ptr) throw BufferException("Storage allocate CUDA failed");
-        owns_memory = true;
-            //     break;
-            // }
 
-            // default:
-            //     throw BufferException("Storage allocate: unsupported device");
-        // }
     }
     void allocateAsync(Dev::StreamHandle stream) {
         std::lock_guard<std::mutex> lock(mtx_);
@@ -80,7 +65,6 @@ struct Storage{
                 auto& dm = Dev::DeviceManager::get_instance();
                 ptr = dm.allocateAsync(device, nbytes, MemoryType::Device, stream);
                 if (!ptr) throw BufferException("Storage allocateAsync CUDA failed");
-                owns_memory = true;
                 break;
             }
 
@@ -89,79 +73,79 @@ struct Storage{
         }
     }
 
-    void allocate_host(){
-        if(host_ptr || nbytes == 0) return;
-#ifdef __cpp_aligned_new
-        host_ptr = ::operator new(nbytes,std::align_val_t(align));
-#else
-        host_ptr = std::malloc(nbytes);
-#endif
-        if(!host_ptr)throw std::bad_alloc();
-        host_owns_memory = true;
-    }
+//     void allocate_host(){
+//         if(nbytes == 0) return;
+// #ifdef __cpp_aligned_new
+//         host_ptr = ::operator new(nbytes,std::align_val_t(align));
+// #else
+//         host_ptr = std::malloc(nbytes);
+// #endif
+//         if(!host_ptr)throw std::bad_alloc();
+//         host_owns_memory = true;
+//     }
 
-    void ensure_host_mirror(){
-        std::lock_guard<std::mutex> lock(mtx_);
-         if (!ptr && nbytes > 0) {
-            throw BufferException("ensure_host_mirror: device storage not allocated");
-        }
-        if(!host_ptr){
-            allocate_host();
-        }
-        if(device.type() == DeviceType::CPU){
-            // 直接镜像为数据副本
-            if(!host_valid){
-                std::memcpy(host_ptr,ptr,nbytes);
-                host_valid = true;
-                host_dirty = false;
-            }return;
-        }
-        if(host_dirty){
-            host_valid = true;
-            return;
-        }
-        if(host_valid)return;
+//     void ensure_host_mirror(){
+//         std::lock_guard<std::mutex> lock(mtx_);
+//          if (!ptr && nbytes > 0) {
+//             throw BufferException("ensure_host_mirror: device storage not allocated");
+//         }
+//         if(!host_ptr){
+//             allocate_host();
+//         }
+//         if(device.type() == DeviceType::CPU){
+//             // 直接镜像为数据副本
+//             if(!host_valid){
+//                 std::memcpy(host_ptr,ptr,nbytes);
+//                 host_valid = true;
+//                 host_dirty = false;
+//             }return;
+//         }
+//         if(host_dirty){
+//             host_valid = true;
+//             return;
+//         }
+//         if(host_valid)return;
 
-        // WARN: 谨记 auto 不会推到为引用！！！
-        auto& dm = DM::get_instance();
-        auto s = dm.createStream(device,0);
-        dm.memcpyAsync(host_ptr,DI::cpu(),ptr,device,nbytes,s);
-        dm.synchronize(s);
-        dm.destroyStream(s);
-        host_valid = true;
-    }
-    void flush_host_to_device_if_needed(){
-        std::lock_guard<std::mutex> lock(mtx_);
-        if(!host_dirty) return;
-         if (!host_ptr) throw BufferException("flush_host_to_device_if_needed: no host mirror");
-        if (!ptr) throw BufferException("flush_host_to_device_if_needed: no device storage");
-        if(device.type() == DeviceType::CPU){
-            std::memcpy(ptr,host_ptr,nbytes);
-            host_valid = true;
-            host_dirty = false;
-            return;
-        }
-        auto& dm = DM::get_instance();
-        auto s = dm.createStream(device, 0);
-        dm.memcpyAsync(ptr, device, host_ptr, DI::cpu(),nbytes,s);
-        dm.synchronize(s);
-        dm.destroyStream(s);
+//         // WARN: 谨记 auto 不会推到为引用！！！
+//         auto& dm = DM::get_instance();
+//         auto s = dm.createStream(device,0);
+//         dm.memcpyAsync(host_ptr,DI::cpu(),ptr,device,nbytes,s);
+//         dm.synchronize(s);
+//         dm.destroyStream(s);
+//         host_valid = true;
+    // }
+    // void flush_host_to_device_if_needed(){
+    //     std::lock_guard<std::mutex> lock(mtx_);
+    //     if(!host_dirty) return;
+    //      if (!host_ptr) throw BufferException("flush_host_to_device_if_needed: no host mirror");
+    //     if (!ptr) throw BufferException("flush_host_to_device_if_needed: no device storage");
+    //     if(device.type() == DeviceType::CPU){
+    //         std::memcpy(ptr,host_ptr,nbytes);
+    //         host_valid = true;
+    //         host_dirty = false;
+    //         return;
+    //     }
+    //     auto& dm = DM::get_instance();
+    //     auto s = dm.createStream(device, 0);
+    //     dm.memcpyAsync(ptr, device, host_ptr, DI::cpu(),nbytes,s);
+    //     dm.synchronize(s);
+    //     dm.destroyStream(s);
 
-        host_valid = true;
-        host_dirty = false;
-    }
+    //     host_valid = true;
+    //     host_dirty = false;
+    // }
 
-    void mark_host_dirty(){
-        std::lock_guard<std::mutex> lock(mtx_);
-        host_valid = true;
-        host_dirty = true;
-    }
+    // void mark_host_dirty(){
+    //     std::lock_guard<std::mutex> lock(mtx_);
+    //     host_valid = true;
+    //     host_dirty = true;
+    // }
 
-    void invalidate_host(){
-        std::lock_guard<std::mutex> lock(mtx_);
-        host_valid = false;
-        host_dirty = false;
-    }
+    // void invalidate_host(){
+    //     std::lock_guard<std::mutex> lock(mtx_);
+    //     host_valid = false;
+    //     host_dirty = false;
+    // }
 
     void release() noexcept {
         std::lock_guard<std::mutex> lock(mtx_);

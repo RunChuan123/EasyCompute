@@ -1,3 +1,9 @@
+
+/**
+ * 张量语义，
+ * 负责各种数据
+ */
+
 #pragma once
 
 #include <initializer_list>
@@ -96,10 +102,10 @@ public:
     std::vector<size_t> strides()const{return make_strides(meta.shape);}
     inline void set_requires_grad(bool i) { meta.requires_grad = i; }
 
-    template<typename T>
-    T& operator[](size_t index) {return at(Shape({index}));}
-    template<typename T>
-    const T& operator[](size_t index) const {return at(Shape({index}));}
+    // template<typename T>
+    // T& operator[](size_t index) {return at(Shape({index}));}
+    // template<typename T>
+    // const T& operator[](size_t index) const {return at(Shape({index}));}
 
     inline const Buffer* buffer_ptr() const { return data_.get(); }
     inline std::shared_ptr<Buffer> buffer() const { return data_; }
@@ -139,46 +145,46 @@ public:
 
     size_t offset(const Shape& s)const;
 
-    template<typename T>
-    T& _at(const Shape& index) {
-        if (get_dtype<T>() != meta.dtype) {
-            throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
-        }
-        const size_t off = offset(index);
+    // template<typename T>
+    // T& _at(const Shape& index) {
+    //     if (get_dtype<T>() != meta.dtype) {
+    //         throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
+    //     }
+    //     const size_t off = offset(index);
 
-        if (meta.device.type() == DeviceType::CPU) {   
-            return data_ptr<T>()[off];
-        }
+    //     if (meta.device.type() == DeviceType::CPU) {   
+    //         return data_ptr<T>()[off];
+    //     }
 
-        ensure_host_mirror_();
-        data_->mark_host_dirty(); // 非 const 访问按可能写入处理
-        return static_cast<T*>(data_->host_data_ptr())[off];
-    }
+    //     ensure_host_mirror_();
+    //     data_->mark_host_dirty(); // 非 const 访问按可能写入处理
+    //     return static_cast<T*>(data_->host_data_ptr())[off];
+    // }
 
-    template<typename T>
-    const T& _at(const Shape& index) const {
-        if (get_dtype<T>() != meta.dtype) {
-            throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
-        }
-        const size_t off = offset(index);
+    // template<typename T>
+    // const T& _at(const Shape& index) const {
+    //     if (get_dtype<T>() != meta.dtype) {
+    //         throw TypeException("Tensor::at<T> type mismatch with tensor dtype");
+    //     }
+    //     const size_t off = offset(index);
 
-        if (meta.device.type() == DeviceType::CPU) {
-            return data_ptr<T>()[off];
-        }
+    //     if (meta.device.type() == DeviceType::CPU) {
+    //         return data_ptr<T>()[off];
+    //     }
 
-        ensure_host_mirror_();
-        return static_cast<const T*>(data_->host_data_ptr())[off];
-    }
-    decltype(auto) at(const Shape& index);
+    //     ensure_host_mirror_();
+    //     return static_cast<const T*>(data_->host_data_ptr())[off];
+    // }
+    // decltype(auto) at(const Shape& index);
     
-    decltype(auto) at(const Shape& index) const;
+    // decltype(auto) at(const Shape& index) const;
 
-    template<typename F>
-    decltype(auto) at(const Shape& index, F&& f) {
-        return dispatch_dtype(getDtype(), [&]<typename T>() {
-            f(data_ptr<T>()[offset(index)]);
-        });
-    }
+    // template<typename F>
+    // decltype(auto) at(const Shape& index, F&& f) {
+    //     return dispatch_dtype(getDtype(), [&]<typename T>() {
+    //         f(data_ptr<T>()[offset(index)]);
+    //     });
+    // }
 
     bool clear();
     Tensor clone();
