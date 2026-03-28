@@ -169,9 +169,17 @@ public:
         ensure_host_mirror_();
         return static_cast<const T*>(data_->host_data_ptr())[off];
     }
-    float& at(const Shape& index);
+    decltype(auto) at(const Shape& index);
     
-    const float& at(const Shape& index) const;
+    decltype(auto) at(const Shape& index) const;
+
+    template<typename F>
+    decltype(auto) at(const Shape& index, F&& f) {
+        return dispatch_dtype(getDtype(), [&]<typename T>() {
+            f(data_ptr<T>()[offset(index)]);
+        });
+    }
+
     bool clear();
     Tensor clone();
     void copy_(Tensor& src);

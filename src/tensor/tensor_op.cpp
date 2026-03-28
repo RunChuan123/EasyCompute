@@ -7,7 +7,7 @@ namespace EC{
 namespace AT{
 
 
-Tensor add(Tensor& a,Tensor& b){
+Tensor add(const Tensor& a,const Tensor& b){
     // Trace
     if(auto* tr = Tr::current_tracer(); tr && Tr::is_tracing()){
         auto va = tr->resolve_tensor(a);
@@ -26,7 +26,7 @@ Tensor add(Tensor& a,Tensor& b){
     Tensor c = k.output<Tensor>(0);
     return c;
 }
-Tensor sub(Tensor& a,Tensor& b){
+Tensor sub(const Tensor& a,const Tensor& b){
     // Trace
     if(auto* tr = Tr::current_tracer(); tr && Tr::is_tracing()){
         auto va = tr->resolve_tensor(a);
@@ -44,7 +44,7 @@ Tensor sub(Tensor& a,Tensor& b){
     Tensor c = k.output<Tensor>(0);
     return c;
 }
-Tensor mul(Tensor& a,Tensor& b){
+Tensor mul(const Tensor& a,const Tensor& b){
     // Trace
     if(auto* tr = Tr::current_tracer(); tr && Tr::is_tracing()){
         auto va = tr->resolve_tensor(a);
@@ -62,7 +62,7 @@ Tensor mul(Tensor& a,Tensor& b){
     Tensor c = k.output<Tensor>(0);
     return c;
 }
-Tensor div(Tensor& a,Tensor& b){
+Tensor div(const Tensor& a,const Tensor& b){
     // Trace
     if(auto* tr = Tr::current_tracer(); tr && Tr::is_tracing()){
         auto va = tr->resolve_tensor(a);
@@ -81,7 +81,7 @@ Tensor div(Tensor& a,Tensor& b){
     return c;
 }
 
-Tensor sin(Tensor& a){
+Tensor sin(const Tensor& a){
     // Trace
     if(auto* tr = Tr::current_tracer(); tr && Tr::is_tracing()){
         auto va = tr->resolve_tensor(a);

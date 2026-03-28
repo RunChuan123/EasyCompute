@@ -77,7 +77,7 @@ struct DeviceIdentification{
         oss << index_;
         return oss.str();
     }
-    inline bool operator==(const DeviceIdentification& rhs){
+    inline bool operator==(const DeviceIdentification& rhs) const {
         if(rhs.type_ == type_ && rhs.index_ == index_)return true;
         return false;
     }

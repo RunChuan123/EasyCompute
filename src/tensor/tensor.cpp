@@ -34,22 +34,41 @@ size_t Tensor::offset(const Shape& s) const {
     }
     return linear;
 }
-float& Tensor::at(const Shape& index){
-    switch (getDtype()) {
-        case DType::f32: return data_ptr<float>()[offset(index)];
-        case DType::f64: return (float&)data_ptr<double>()[offset(index)];
-        case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
-        default: throw std::runtime_error("unsupported dtype");
-    }
+// float& Tensor::at(const Shape& index){
+//     switch (getDtype()) {
+//         case DType::f32: return data_ptr<float>()[offset(index)];
+//         case DType::f64: return (float&)data_ptr<double>()[offset(index)];
+//         case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
+//         default: throw std::runtime_error("unsupported dtype");
+//     }
+//     dispatch_dtype(getDtype(),[&]<typename T>(){
+//         return data_ptr<T>()[offset(index)];
+//     });
+
+
+// }
+// const float& Tensor::at(const Shape& index) const{
+//     return dispatch_dtype(getDtype(),[&]<typename T>(){
+//         return data_ptr<const T>()[offset(index)];
+//     });
+// }
+
+// 用来接收任意类型返回值的自动推导接口
+
+
+// 或者：直接返回对应类型的引用（最佳方案）
+decltype(auto) Tensor::at(const Shape& index) {
+    return dispatch_dtype(getDtype(), [&]<typename T>() -> decltype(auto) {
+        return data_ptr<T>()[offset(index)];
+    });
 }
-const float& Tensor::at(const Shape& index) const{
-    switch (getDtype()) {
-        case DType::f32: return data_ptr<float>()[offset(index)];
-        case DType::f64: return (float&)data_ptr<double>()[offset(index)];
-        case DType::i32:   return (float&)data_ptr<int>()[offset(index)];
-        default: throw std::runtime_error("unsupported dtype");
-    }
+
+decltype(auto) Tensor::at(const Shape& index) const {
+    return dispatch_dtype(getDtype(), [&]<typename T>() -> decltype(auto) {
+        return data_ptr<const T>()[offset(index)];
+    });
 }
+
 /** 
  * 清理 buffer 和 grad 数据
  */
@@ -107,6 +126,9 @@ void Tensor::fill_(float value){
         switch (meta.dtype) {
             case DType::f32:
                 CPU::fill<float>(ptr, meta.numel(), static_cast<float>(value));
+                break;
+            case DType::f16:
+                CPU::fill<float>(ptr, meta.numel(), static_cast<_Float16>(value));
                 break;
             case DType::f64:
                 CPU::fill<double>(ptr, meta.numel(), static_cast<double>(value));
@@ -394,9 +416,9 @@ Tensor Tensor::uniform(Shape s, float low, float high, DType dt, DI dev) {
 Tensor Tensor::normal(Shape s, float mean, float stddev, DType dt, DI dev) {
     Tensor t = Tensor::zeros(s, dt, dev);
 
-    if (dt != DType::f32) {
-        throw TypeException("normal only implemented for f32 currently");
-    }
+    // if (dt != DType::f32) {
+    //     throw TypeException("normal only implemented for f32 currently");
+    // }
 
     std::mt19937 gen(std::random_device{}());
     std::normal_distribution<float> dis(mean, stddev);

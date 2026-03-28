@@ -42,7 +42,6 @@ inline void cast_contiguous(const void* src,
             switch (dst_dtype) {
                 case DType::f64: cast_contiguous_kernel<float, double>(src, dst, n); return;
                 case DType::i32: cast_contiguous_kernel<float, int32_t>(src, dst, n); return;
-                case DType::i64: cast_contiguous_kernel<float, int64_t>(src, dst, n); return;
                 case DType::u8:  cast_contiguous_kernel<float, uint8_t>(src, dst, n); return;
                 case DType::bool_: cast_contiguous_kernel<float, bool>(src, dst, n); return;
                 default: break;
@@ -53,7 +52,6 @@ inline void cast_contiguous(const void* src,
             switch (dst_dtype) {
                 case DType::f32: cast_contiguous_kernel<double, float>(src, dst, n); return;
                 case DType::i32: cast_contiguous_kernel<double, int32_t>(src, dst, n); return;
-                case DType::i64: cast_contiguous_kernel<double, int64_t>(src, dst, n); return;
                 default: break;
             }
             break;
@@ -62,19 +60,10 @@ inline void cast_contiguous(const void* src,
             switch (dst_dtype) {
                 case DType::f32: cast_contiguous_kernel<int32_t, float>(src, dst, n); return;
                 case DType::f64: cast_contiguous_kernel<int32_t, double>(src, dst, n); return;
-                case DType::i64: cast_contiguous_kernel<int32_t, int64_t>(src, dst, n); return;
                 default: break;
             }
             break;
 
-        case DType::i64:
-            switch (dst_dtype) {
-                case DType::f32: cast_contiguous_kernel<int64_t, float>(src, dst, n); return;
-                case DType::f64: cast_contiguous_kernel<int64_t, double>(src, dst, n); return;
-                case DType::i32: cast_contiguous_kernel<int64_t, int32_t>(src, dst, n); return;
-                default: break;
-            }
-            break;
 
         case DType::u8:
             switch (dst_dtype) {

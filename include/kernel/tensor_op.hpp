@@ -137,13 +137,13 @@ inline void register_all_kernels(){
 }
 
 
-Tensor add(Tensor& a,Tensor& b);
-Tensor sub(Tensor& a,Tensor& b);
-Tensor mul(Tensor& a,Tensor& b);
-Tensor div(Tensor& a,Tensor& b);
-Tensor sin(Tensor& a);
+Tensor add(const Tensor& a,const Tensor& b);
+Tensor sub(const Tensor& a,const Tensor& b);
+Tensor mul(const Tensor& a,const Tensor& b);
+Tensor div(const Tensor& a,const Tensor& b);
+Tensor sin(const Tensor& a);
 Tensor gemv(const Tensor& A,const Tensor& x,const Tensor& y,float alpha=1.0,float beta=0.0);
-Tensor gemm(Tensor& a,Tensor& b);
+Tensor gemm(const Tensor& a,const Tensor& b);
 
 
 //     cat,
@@ -160,10 +160,10 @@ Tensor gemm(Tensor& a,Tensor& b);
 //     lu_decompose_crout,
 //     lu_decompose_doolittle,
 
-inline Tensor operator+(Tensor& a,Tensor& b){return add(a,b);}
-inline Tensor operator-(Tensor& a,Tensor& b){return sub(a,b);}
-inline Tensor operator*(Tensor& a,Tensor& b){return mul(a,b);}
-inline Tensor operator/(Tensor& a,Tensor& b){return div(a,b);}
+inline Tensor operator+(const Tensor& a,const Tensor& b){return add(a,b);}
+inline Tensor operator-(const Tensor& a,const Tensor& b){return sub(a,b);}
+inline Tensor operator*(const Tensor& a,const Tensor& b){return mul(a,b);}
+inline Tensor operator/(const Tensor& a,const Tensor& b){return div(a,b);}
 
 
 
