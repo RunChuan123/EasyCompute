@@ -9,7 +9,7 @@
 #include "../device_runtime.hpp"
 #include "../device_manager.hpp"
 
-namespace EC::Dev
+namespace EC::Dev::CPU
 {
 
 // CPU Event 内部结构（记录状态+依赖）

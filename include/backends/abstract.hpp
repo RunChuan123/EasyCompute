@@ -15,27 +15,16 @@ namespace EC::Dev
  */
 class IStream {
 public:
-    IStream() = default;
-    explicit IStream(void* impl, DI device=DI::cpu()) : impl_(impl), device_(device) {}
+    virtual ~IStream() = default;
 
-    void set(void* impl_ptr=nullptr){impl_ = impl_ptr;}
-    void reset(){impl_ = nullptr;}
-
-    virtual void submit( Task* task) const =0;
-    virtual void wait_event(IEvent ev) =0;
-    virtual IEvent record_event() = 0; 
+    virtual void submit( TS::Task* task) const =0;
+    virtual void wait_event(IEvent* ev) =0;
+    virtual IEvent* record_event() = 0; 
     virtual void synchronize() = 0;
-
-
-    bool is_default();
-    bool is_blocking();
-    void* impl() const { return impl_; }
-    DI device() const { return device_; }
-    explicit operator bool() const { return impl_ != nullptr; }
-
-private:
-    void* impl_{nullptr};
-    DI device_;
+    virtual DI device() const =0;
+    // 未来可能会用到
+    // bool is_default();
+    // bool is_blocking();
 };
 
 /**
@@ -44,21 +33,13 @@ private:
  */
 class IEvent {
 public:
-    IEvent() = default;
-    explicit IEvent(void* impl, DI device) : impl_(impl), device_(device) {}
-    void set(void* impl_ptr=nullptr){impl_ = impl_ptr;}
-    void reset(){impl_ = nullptr;}
+    virtual ~IEvent() = default;
 
     virtual bool query() const =0;
     virtual void synchronize() = 0;
+    virtual void set_complete(){}
 
-    void* impl() const { return impl_; }
-    DI device() const { return device_; }
-    explicit operator bool() const { return impl_ != nullptr; }
 
-private:
-    void* impl_{nullptr};
-    DI device_;
 };
 
 struct DevAllocator{

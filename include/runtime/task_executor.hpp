@@ -17,10 +17,11 @@
 // #include "util/check_cuda.cuh"
 
 namespace EC{
-namespace Task{
+namespace TS{
 
     
 enum class TaskType{
+    Default,
     Memcpy,
     Compute,
     Free,
@@ -47,9 +48,9 @@ enum class TaskStatus{
 // 任务单元
 struct Task{
     std::string task_name;
-    TaskType task_type{TaskType::Custom};
+    TaskType task_type{TaskType::Default};
     Priority priority{Priority::Normal};
-    int order; // 相同优先级，order 小的先执行；
+    int order{0}; // 相同优先级，order 小的先执行；
 
     DI device;
     std::shared_ptr<Dev::IStream> stream;
