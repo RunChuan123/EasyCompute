@@ -19,7 +19,7 @@ public:
 
     virtual void submit( TS::Task* task) const =0;
     virtual void wait_event(IEvent* ev) =0;
-    virtual IEvent* record_event() = 0; 
+    virtual IEvent* record_event(){return nullptr;} 
     virtual void synchronize() = 0;
     virtual DI device() const =0;
     // 未来可能会用到

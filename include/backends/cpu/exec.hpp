@@ -38,6 +38,10 @@ struct CPUEvent final:public IEvent{
         cv_.wait(lock, [this] { return completed_; });
     }
 
+    DI device() const{
+        return DI::cpu();
+    }
+
 private:
     bool completed_{false};
     mutable std::mutex mtx_;
