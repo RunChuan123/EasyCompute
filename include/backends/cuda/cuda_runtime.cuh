@@ -13,11 +13,11 @@ namespace EC::Dev
 {
 
 
-static inline cudaStream_t toCudaStream(StreamHandle s) {
+static inline cudaStream_t toCudaStream(IStream s) {
     return reinterpret_cast<cudaStream_t>(s.impl());
 }
 
-static inline cudaEvent_t toCudaEvent(EventHandle e) {
+static inline cudaEvent_t toCudaEvent(IEvent e) {
     return reinterpret_cast<cudaEvent_t>(e.impl());
 }
 
@@ -47,31 +47,31 @@ public:
 
     void deallocate(DI dev, void* ptr, MemoryType kind) override ;
 
-    void* allocateAsync(DI dev, size_t bytes, MemoryType kind, StreamHandle stream) override ;
+    void* allocateAsync(DI dev, size_t bytes, MemoryType kind, IStream stream) override ;
 
-    void deallocateAsync(DI dev, void* ptr, MemoryType kind, StreamHandle stream) override ;
+    void deallocateAsync(DI dev, void* ptr, MemoryType kind, IStream stream) override ;
 
-    StreamHandle createStream(DI dev, int priority = 0) override;
+    IStream createStream(DI dev, int priority = 0) override;
 
-    void destroyStream(StreamHandle stream) override;
+    void destroyStream(IStream stream) override;
 
-    void synchronizeStream(StreamHandle stream) override;
+    void synchronizeStream(IStream stream) override;
 
-    EventHandle createEvent(DI dev, bool timing = false) override;
+    IEvent createEvent(DI dev, bool timing = false) override;
 
-    void destroyEvent(EventHandle event) override;
+    void destroyEvent(IEvent event) override;
 
-    void recordEvent(EventHandle event, StreamHandle stream) override;
+    void recordEvent(IEvent event, IStream stream) override;
 
-    bool queryEvent(EventHandle event) override ;
+    bool queryEvent(IEvent event) override ;
 
-    void synchronizeEvent(EventHandle event) override;
+    void synchronizeEvent(IEvent event) override;
 
-    void waitEvent(StreamHandle stream, EventHandle event) override ;
+    void waitEvent(IStream stream, IEvent event) override ;
 
     void memcpyAsync(void* dst, DI dst_dev,
                      const void* src, DI src_dev,
-                     size_t bytes, StreamHandle stream) override ;
+                     size_t bytes, IStream stream) override ;
 };
 
 inline void registerCUDABackends() {

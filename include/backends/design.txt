@@ -1,0 +1,15 @@
+三大时间线
+    1 Host 调度时间线，任务的提交，任务依赖，
+    2 Device 执行时间线，上下文，事件顺序执行，计算操作，内存操作
+    3 内存生命周期时间线，内存释放逻辑，与 task 协调
+
+
+
+Device：设备实例，比如 cpu:0 / cuda:0 / ascend:0
+Stream / Queue：设备上的执行队列，CPU 也虚拟成 stream
+Event：跨任务、跨 stream 的依赖句柄
+Command / OpTask：一次具体执行动作，比如 kernel、memcpy、fill、free
+Dispatcher：根据 op + device 选择具体 kernel 实现
+Scheduler / Runtime：负责任务提交、依赖拼接、event wait/record
+MemoryManager：只负责内存，不直接负责算子调度
+Graph / Trace Executor：如果你有 trace 模式，就把整张图编排后提交给 runtime

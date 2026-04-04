@@ -74,7 +74,7 @@ void CpuDeviceRuntime::deallocate(DI dev, void* ptr, MemoryType kind) {
 }
 
 // ========== 核心：Event 实现（保证执行顺序） ==========
-EventHandle CpuDeviceRuntime::createEvent(DI dev, bool timing) {
+IEvent CpuDeviceRuntime::createEvent(DI dev, bool timing) {
     (void)timing;
     setCurrentDevice(dev);
 
@@ -91,10 +91,10 @@ EventHandle CpuDeviceRuntime::createEvent(DI dev, bool timing) {
     std::lock_guard<std::mutex> lock(mtx_);
     cpu_events_[event_ptr] = std::move(event_data);
 
-    return EventHandle(event_ptr, dev);
+    return IEvent(event_ptr, dev);
 }
 
-void CpuDeviceRuntime::destroyEvent(EventHandle event) {
+void CpuDeviceRuntime::destroyEvent(IEvent event) {
     if (!event.valid()) return;
 
     std::lock_guard<std::mutex> lock(mtx_);
@@ -106,7 +106,7 @@ void CpuDeviceRuntime::destroyEvent(EventHandle event) {
 }
 
 // 记录Event：标记事件完成 + 触发依赖链
-void CpuDeviceRuntime::recordEvent(EventHandle event, StreamHandle stream) {
+void CpuDeviceRuntime::recordEvent(IEvent event, IStream stream) {
     (void)stream;
     if (!event.valid()) return;
 
@@ -120,7 +120,7 @@ void CpuDeviceRuntime::recordEvent(EventHandle event, StreamHandle stream) {
 }
 
 // 查询Event状态
-bool CpuDeviceRuntime::queryEvent(EventHandle event) {
+bool CpuDeviceRuntime::queryEvent(IEvent event) {
     if (!event.valid()) return true;
 
     std::lock_guard<std::mutex> lock(mtx_);
@@ -138,7 +138,7 @@ bool CpuDeviceRuntime::queryEvent(EventHandle event) {
 }
 
 // 同步等待Event完成（递归等待依赖）
-void CpuDeviceRuntime::synchronizeEvent(EventHandle event) {
+void CpuDeviceRuntime::synchronizeEvent(IEvent event) {
     if (!event.valid()) return;
 
     std::lock_guard<std::mutex> lock(mtx_);
@@ -151,7 +151,7 @@ void CpuDeviceRuntime::synchronizeEvent(EventHandle event) {
 }
 
 // 流等待Event（核心：添加依赖，保证执行顺序）
-void CpuDeviceRuntime::waitEvent(StreamHandle stream, EventHandle event) {
+void CpuDeviceRuntime::waitEvent(IStream stream, IEvent event) {
     (void)stream;
     if (!event.valid()) return;
 
@@ -179,7 +179,7 @@ void CpuDeviceRuntime::waitEventInternal(CpuEventData* event_data) {
 // ========== 拷贝接口（结合Event保证顺序） ==========
 void CpuDeviceRuntime::memcpyAsync(void* dst, DI dst_dev,
                                    const void* src, DI src_dev,
-                                   size_t bytes, StreamHandle stream) {
+                                   size_t bytes, IStream stream) {
     (void)stream;
     setCurrentDevice(src_dev);
 

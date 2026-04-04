@@ -28,7 +28,7 @@ struct ViewDesc{
     AccessDev dev;
     AccessMode mode;
     DI device;
-    Dev::StreamHandle stream{};
+    Dev::IStream stream{};
     bool async = false;
 };
 

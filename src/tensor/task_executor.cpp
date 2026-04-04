@@ -4,16 +4,16 @@
 namespace EC {
 namespace Task {
 
-AsyncTaskExecutor::~AsyncTaskExecutor() {
+TaskExecutor::~TaskExecutor() {
     try {
         clearAllTasks();
     } catch (...) {
     }
 }
 
-void AsyncTaskExecutor::validateRegisterInputsUnlocked(
+void TaskExecutor::validateRegisterInputsUnlocked(
     const std::string& task_name,
-    const std::vector<AsyncTask*>& dependencies) {
+    const std::vector<Task*>& dependencies) {
 
     if (task_name.empty()) {
         throw std::runtime_error("registerTask failed: empty task_name");
@@ -33,14 +33,14 @@ void AsyncTaskExecutor::validateRegisterInputsUnlocked(
 /**
  * 从 src 到 dst
  */
-bool AsyncTaskExecutor::isReachableUnlocked(const AsyncTask* src, const AsyncTask* dst) const {
+bool TaskExecutor::isReachableUnlocked(const Task* src, const Task* dst) const {
     if (src == nullptr || dst == nullptr) return false;
     if (src == dst) return true;
 
-    std::vector<const AsyncTask*> stack;
+    std::vector<const Task*> stack;
     stack.push_back(src);
 
-    std::unordered_map<const AsyncTask*, bool> visited;
+    std::unordered_map<const Task*, bool> visited;
     visited[src] = true;
 
     while (!stack.empty()) {
@@ -59,9 +59,9 @@ bool AsyncTaskExecutor::isReachableUnlocked(const AsyncTask* src, const AsyncTas
     return false;
 }
 
-bool AsyncTaskExecutor::wouldIntroduceCycleUnlocked(
-    const std::vector<AsyncTask*>& dependencies,
-    const AsyncTask* new_task) const {
+bool TaskExecutor::wouldIntroduceCycleUnlocked(
+    const std::vector<Task*>& dependencies,
+    const Task* new_task) const {
 
     // 对于“新任务只从已有任务指向自己”的注册过程，
     // 理论上不会形成环。这里保留接口是为了以后扩展动态加边。
@@ -70,7 +70,7 @@ bool AsyncTaskExecutor::wouldIntroduceCycleUnlocked(
     return false;
 }
 
-void AsyncTaskExecutor::enqueueReadyUnlocked(AsyncTask* task) {
+void TaskExecutor::enqueueReadyUnlocked(Task* task) {
     if (task == nullptr) return;
 
     auto st = task->status.load(std::memory_order_acquire);
@@ -81,21 +81,21 @@ void AsyncTaskExecutor::enqueueReadyUnlocked(AsyncTask* task) {
     }
 }
 
-void AsyncTaskExecutor::markTaskFinishedUnlocked(AsyncTask* task) {
+void TaskExecutor::markTaskFinishedUnlocked(Task* task) {
     if (task == nullptr) return;
     task->status.store(TaskStatus::Finished, std::memory_order_release);
     ++finished_tasks_;
     cv_.notify_all();
 }
 
-void AsyncTaskExecutor::markTaskFailedUnlocked(AsyncTask* task) {
+void TaskExecutor::markTaskFailedUnlocked(Task* task) {
     if (task == nullptr) return;
     task->status.store(TaskStatus::Failed, std::memory_order_release);
     ++finished_tasks_;
     cv_.notify_all();
 }
 
-void AsyncTaskExecutor::notifyDependentsUnlocked(AsyncTask* task) {
+void TaskExecutor::notifyDependentsUnlocked(Task* task) {
     if (task == nullptr) return;
 
     for (auto* dependent : task->dependents) {
@@ -113,7 +113,7 @@ void AsyncTaskExecutor::notifyDependentsUnlocked(AsyncTask* task) {
     }
 }
 
-void AsyncTaskExecutor::ensureTaskEventsCreated(AsyncTask* task) {
+void TaskExecutor::ensureTaskEventsCreated(Task* task) {
     if (task == nullptr) return;
 
     auto& dm = DM::get_instance();
@@ -126,7 +126,7 @@ void AsyncTaskExecutor::ensureTaskEventsCreated(AsyncTask* task) {
     }
 }
 
-bool AsyncTaskExecutor::executeTaskOutsideLock(AsyncTask* task) {
+bool TaskExecutor::executeTaskOutsideLock(Task* task) {
     if (task == nullptr) {
         throw std::runtime_error("executeTaskOutsideLock: nullptr task");
     }
@@ -155,9 +155,9 @@ bool AsyncTaskExecutor::executeTaskOutsideLock(AsyncTask* task) {
     return ok;
 }
 
-AsyncTask* AsyncTaskExecutor::popReadyTaskUnlocked() {
+Task* TaskExecutor::popReadyTaskUnlocked() {
     while (!ready_queue_.empty()) {
-        AsyncTask* task = ready_queue_.top();
+        Task* task = ready_queue_.top();
         ready_queue_.pop();
 
         if (task == nullptr) continue;
@@ -171,19 +171,19 @@ AsyncTask* AsyncTaskExecutor::popReadyTaskUnlocked() {
     return nullptr;
 }
 
-AsyncTask* AsyncTaskExecutor::registerTask(const std::string& task_name,
+Task* TaskExecutor::registerTask(const std::string& task_name,
                                            TaskType task_type,
                                            Priority priority,
                                            int order,
                                            DI dev,
-                                           Dev::StreamHandle stream,
+                                           Dev::IStream stream,
                                            std::function<bool()> func,
-                                           const std::vector<AsyncTask*>& dependencies) {
+                                           const std::vector<Task*>& dependencies) {
     std::lock_guard<std::mutex> lock(mtx_);
 
     validateRegisterInputsUnlocked(task_name, dependencies);
 
-    auto task = std::make_unique<AsyncTask>();
+    auto task = std::make_unique<Task>();
     task->task_name = task_name;
     task->task_type = task_type;
     task->priority = priority;
@@ -196,7 +196,7 @@ AsyncTask* AsyncTaskExecutor::registerTask(const std::string& task_name,
                                      std::memory_order_release);
     task->status.store(TaskStatus::Created, std::memory_order_release);
 
-    AsyncTask* raw = task.get();
+    Task* raw = task.get();
 
     if (wouldIntroduceCycleUnlocked(dependencies, raw)) {
         throw std::runtime_error("registerTask failed: cycle detected for task: " + task_name);
@@ -216,9 +216,9 @@ AsyncTask* AsyncTaskExecutor::registerTask(const std::string& task_name,
     return raw;
 }
 
-void AsyncTaskExecutor::executeReadyTasks() {
+void TaskExecutor::executeReadyTasks() {
     while (true) {
-        AsyncTask* task = nullptr;
+        Task* task = nullptr;
 
         {
             std::lock_guard<std::mutex> lock(mtx_);
@@ -250,12 +250,12 @@ void AsyncTaskExecutor::executeReadyTasks() {
     }
 }
 
-void AsyncTaskExecutor::executeUntilIdle() {
+void TaskExecutor::executeUntilIdle() {
     executeReadyTasks();
 }
 
-void AsyncTaskExecutor::waitTask(const std::string& task_name) {
-    AsyncTask* task = nullptr;
+void TaskExecutor::waitTask(const std::string& task_name) {
+    Task* task = nullptr;
 
     {
         std::lock_guard<std::mutex> lock(mtx_);
@@ -289,8 +289,8 @@ void AsyncTaskExecutor::waitTask(const std::string& task_name) {
     }
 }
 
-bool AsyncTaskExecutor::waitTask(const std::string& task_name, int timeout_ms) {
-    AsyncTask* task = nullptr;
+bool TaskExecutor::waitTask(const std::string& task_name, int timeout_ms) {
+    Task* task = nullptr;
     auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
 
     {
@@ -326,7 +326,7 @@ bool AsyncTaskExecutor::waitTask(const std::string& task_name, int timeout_ms) {
     return false;
 }
 
-void AsyncTaskExecutor::waitAllTasks() {
+void TaskExecutor::waitAllTasks() {
     while (true) {
         executeReadyTasks();
 
@@ -345,14 +345,14 @@ void AsyncTaskExecutor::waitAllTasks() {
     // 最后确保所有设备事件都完成
     std::lock_guard<std::mutex> lock(mtx_);
     for (auto& kv : tasks_) {
-        AsyncTask* task = kv.second.get();
+        Task* task = kv.second.get();
         if (task && task->end_event.valid()) {
             Dev::DeviceManager::get_instance().synchronize(task->end_event);
         }
     }
 }
 
-bool AsyncTaskExecutor::isTaskDone(const std::string& task_name) {
+bool TaskExecutor::isTaskDone(const std::string& task_name) {
     std::lock_guard<std::mutex> lock(mtx_);
     auto it = tasks_.find(task_name);
     if (it == tasks_.end()) return false;
@@ -363,19 +363,19 @@ bool AsyncTaskExecutor::isTaskDone(const std::string& task_name) {
            st == TaskStatus::Cancelled;
 }
 
-bool AsyncTaskExecutor::isTaskCompleted(const std::string& task_name) {
+bool TaskExecutor::isTaskCompleted(const std::string& task_name) {
     std::lock_guard<std::mutex> lock(mtx_);
     auto it = tasks_.find(task_name);
     if (it == tasks_.end()) return false;
 
-    AsyncTask* task = it->second.get();
+    Task* task = it->second.get();
     if (!task->end_event.valid()) {
         return false;
     }
     return Dev::DeviceManager::get_instance().queryEvent(task->end_event);
 }
 
-bool AsyncTaskExecutor::isTaskFailed(const std::string& task_name) {
+bool TaskExecutor::isTaskFailed(const std::string& task_name) {
     std::lock_guard<std::mutex> lock(mtx_);
     auto it = tasks_.find(task_name);
     if (it == tasks_.end()) return false;
@@ -383,7 +383,7 @@ bool AsyncTaskExecutor::isTaskFailed(const std::string& task_name) {
     return it->second->status.load(std::memory_order_acquire) == TaskStatus::Failed;
 }
 
-void AsyncTaskExecutor::clearAllTasks() {
+void TaskExecutor::clearAllTasks() {
 
     std::lock_guard<std::mutex> lock(mtx_);
 
@@ -393,7 +393,7 @@ void AsyncTaskExecutor::clearAllTasks() {
 
     auto& dm = DM::get_instance();
     for (auto& kv : tasks_) {
-        AsyncTask* task = kv.second.get();
+        Task* task = kv.second.get();
         if (!task) continue;
 
         if (task->start_event.valid()) {
@@ -413,12 +413,12 @@ void AsyncTaskExecutor::clearAllTasks() {
     cv_.notify_all();
 }
 
-std::size_t AsyncTaskExecutor::numTasks() const {
+std::size_t TaskExecutor::numTasks() const {
     std::lock_guard<std::mutex> lock(mtx_);
     return tasks_.size();
 }
 
-std::size_t AsyncTaskExecutor::numReadyTasks() const {
+std::size_t TaskExecutor::numReadyTasks() const {
     std::lock_guard<std::mutex> lock(mtx_);
     return ready_queue_.size();
 }

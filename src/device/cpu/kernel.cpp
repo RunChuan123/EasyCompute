@@ -136,7 +136,7 @@ void add_kernel(KernelContext& ctx){
     // TODO 基本检查先省略
 
     Tensor out{a.getShape(),0.0f,a.getDtype(),a.getDevice()};
-    auto& exec = Task::AsyncTaskExecutor::get_instance();
+    auto& exec = Task::TaskExecutor::get_instance();
 
     std::string task_name = "ew_add_" + a.id().to_string() + "_" + b.id().to_string();
     exec.registerTask(
@@ -194,7 +194,7 @@ void mul_kernel(KernelContext& ctx){
     // TODO 基本检查先省略
 
     Tensor out{a.getShape(),0.0f,a.getDtype(),a.getDevice()};
-    auto& exec = Task::AsyncTaskExecutor::get_instance();
+    auto& exec = Task::TaskExecutor::get_instance();
 
     std::string task_name = "mul_" + a.id().to_string() + "_" + b.id().to_string();
     exec.registerTask(

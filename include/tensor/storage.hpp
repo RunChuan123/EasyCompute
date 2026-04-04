@@ -51,7 +51,7 @@ struct Storage{
         if (!ptr) throw BufferException("Storage allocate CUDA failed");
 
     }
-    void allocateAsync(Dev::StreamHandle stream) {
+    void allocateAsync(Dev::IStream stream) {
         std::lock_guard<std::mutex> lock(mtx_);
         if (ptr != nullptr || nbytes == 0) return;
 

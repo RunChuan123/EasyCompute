@@ -89,7 +89,7 @@ struct Buffer {
         storage->allocate();
     }
 
-    void allocateAsync(Dev::StreamHandle stream) {
+    void allocateAsync(Dev::IStream stream) {
         if (!storage) {
             throw BufferException("Buffer allocateAsync failed: null storage");
         }

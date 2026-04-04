@@ -7,6 +7,9 @@
 namespace EC
 {
     
+/**
+ * 设备类型
+ */
 enum class DeviceType :uint8_t{
     CPU=0,
     CUDA,
@@ -14,7 +17,9 @@ enum class DeviceType :uint8_t{
 
     NumDevice
 };
-
+/**
+ * 内存类型
+ */
 enum class MemoryType : uint8_t {
     Host,
     PinnedHost,
@@ -22,39 +27,37 @@ enum class MemoryType : uint8_t {
     Unified,
 };
 
+/**
+ * 解释内存
+ */
 struct MemoryKind{
     DeviceType type_;
     int index_ = 0;
     MemoryType memtype_;
 
-    static MemoryKind cpu(){
-        return {DeviceType::CPU,0,MemoryType::Host};
-    }
-    static MemoryKind cuda(int idx=0){
-        return {DeviceType::CUDA,idx,MemoryType::Device};
-    }
-    bool in_cpu() const {return type_ == DeviceType::CPU;}
-    bool in_cuda() const {return type_ == DeviceType::CUDA;}
-    bool in_ascend() const { return type_ == DeviceType::ASCEND; }
+    static MemoryKind cpu(){return {DeviceType::CPU,0,MemoryType::Host};}
 
-    DeviceType type()const{return type_;}
+    static MemoryKind cuda(int cuda_device_idx=0){
+        return {DeviceType::CUDA,cuda_device_idx,MemoryType::Device};
+    }
+
+    DeviceType devtype()const{return type_;}
     int id()const{return index_;}
     MemoryType memtype()const{return memtype_;}
+
 };
 
+/**
+ * 设备标识，设备类型+index
+ */
 struct DeviceIdentification{
     DeviceType type_;
     int index_ = 0;
 
-    static DeviceIdentification cpu(){
-        return {DeviceType::CPU,0};
-    }
-    static DeviceIdentification cuda(int idx=0){
-        return {DeviceType::CUDA,idx};
-    }
-    bool is_cpu() const {return type_ == DeviceType::CPU;}
-    bool is_cuda() const {return type_ == DeviceType::CUDA;}
-    bool is_ascend() const { return type_ == DeviceType::ASCEND; }
+    static DeviceIdentification cpu(){return {DeviceType::CPU,0};}
+
+    static DeviceIdentification cuda(int cuda_deviec_idx=0){return {DeviceType::CUDA,cuda_deviec_idx};}
+
 
     DeviceType type()const{return type_;}
     int id()const{return index_;}
@@ -72,6 +75,7 @@ struct DeviceIdentification{
             oss << "ascend:";
             break;
         default:
+            oss << "unkonw dev";
             break;
         }
         oss << index_;
@@ -81,9 +85,9 @@ struct DeviceIdentification{
         if(rhs.type_ == type_ && rhs.index_ == index_)return true;
         return false;
     }
+
 };
 
 using DI = DeviceIdentification;
+
 }
-
-

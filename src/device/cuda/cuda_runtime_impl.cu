@@ -68,7 +68,7 @@ void CudaDeviceRuntime::deallocate(DI dev, void* ptr, MemoryType kind) {
     }
 }
 
-void* CudaDeviceRuntime::allocateAsync(DI dev, size_t bytes, MemoryType kind, StreamHandle stream) {
+void* CudaDeviceRuntime::allocateAsync(DI dev, size_t bytes, MemoryType kind, IStream stream) {
     setCurrentDevice(dev);
     if (kind != MemoryType::Device) {
         return allocate(dev, bytes, kind);
@@ -82,7 +82,7 @@ void* CudaDeviceRuntime::allocateAsync(DI dev, size_t bytes, MemoryType kind, St
 #endif
 }
 
-void CudaDeviceRuntime::deallocateAsync(DI dev, void* ptr, MemoryType kind, StreamHandle stream) {
+void CudaDeviceRuntime::deallocateAsync(DI dev, void* ptr, MemoryType kind, IStream stream) {
     if (!ptr) return;
     setCurrentDevice(dev);
     if (kind != MemoryType::Device) {
@@ -96,7 +96,7 @@ void CudaDeviceRuntime::deallocateAsync(DI dev, void* ptr, MemoryType kind, Stre
 #endif
 }
 
-StreamHandle CudaDeviceRuntime::createStream(DI dev, int priority) {
+IStream CudaDeviceRuntime::createStream(DI dev, int priority) {
     setCurrentDevice(dev);
     cudaStream_t s = nullptr;
 
@@ -111,41 +111,41 @@ StreamHandle CudaDeviceRuntime::createStream(DI dev, int priority) {
 
     cudaCheck(cudaStreamCreateWithPriority(&s, cudaStreamNonBlocking, cuda_priority),
                 "cudaStreamCreateWithPriority failed");
-    return StreamHandle(reinterpret_cast<void*>(s), dev);
+    return IStream(reinterpret_cast<void*>(s), dev);
 }
 
-void CudaDeviceRuntime::destroyStream(StreamHandle stream) {
+void CudaDeviceRuntime::destroyStream(IStream stream) {
     if (!stream.valid()) return;
     auto dev = stream.device();
     setCurrentDevice(dev);
     cudaCheck(cudaStreamDestroy(toCudaStream(stream)), "cudaStreamDestroy failed");
 }
 
-void CudaDeviceRuntime::synchronizeStream(StreamHandle stream)  {
+void CudaDeviceRuntime::synchronizeStream(IStream stream)  {
     cudaCheck(cudaStreamSynchronize(toCudaStream(stream)), "cudaStreamSynchronize failed");
 }
 
-EventHandle CudaDeviceRuntime::createEvent(DI dev, bool timing )  {
+IEvent CudaDeviceRuntime::createEvent(DI dev, bool timing )  {
     setCurrentDevice(dev);
     cudaEvent_t ev = nullptr;
     unsigned flags = timing ? cudaEventDefault : cudaEventDisableTiming;
     cudaCheck(cudaEventCreateWithFlags(&ev, flags), "cudaEventCreateWithFlags failed");
-    return EventHandle(reinterpret_cast<void*>(ev), dev);
+    return IEvent(reinterpret_cast<void*>(ev), dev);
 }
 
-void CudaDeviceRuntime::destroyEvent(EventHandle event) {
+void CudaDeviceRuntime::destroyEvent(IEvent event) {
     if (!event.valid()) return;
     auto dev = event.device();
     setCurrentDevice(dev);
     cudaCheck(cudaEventDestroy(toCudaEvent(event)), "cudaEventDestroy failed");
 }
 
-void CudaDeviceRuntime::recordEvent(EventHandle event, StreamHandle stream) {
+void CudaDeviceRuntime::recordEvent(IEvent event, IStream stream) {
     cudaCheck(cudaEventRecord(toCudaEvent(event), toCudaStream(stream)),
                 "cudaEventRecord failed");
 }
 
-bool CudaDeviceRuntime::queryEvent(EventHandle event) {
+bool CudaDeviceRuntime::queryEvent(IEvent event) {
     auto err = cudaEventQuery(toCudaEvent(event));
     if (err == cudaSuccess) return true;
     if (err == cudaErrorNotReady) return false;
@@ -153,18 +153,18 @@ bool CudaDeviceRuntime::queryEvent(EventHandle event) {
     return false;
 }
 
-void CudaDeviceRuntime::synchronizeEvent(EventHandle event) {
+void CudaDeviceRuntime::synchronizeEvent(IEvent event) {
     cudaCheck(cudaEventSynchronize(toCudaEvent(event)), "cudaEventSynchronize failed");
 }
 
-void CudaDeviceRuntime::waitEvent(StreamHandle stream, EventHandle event) {
+void CudaDeviceRuntime::waitEvent(IStream stream, IEvent event) {
     cudaCheck(cudaStreamWaitEvent(toCudaStream(stream), toCudaEvent(event), 0),
                 "cudaStreamWaitEvent failed");
 }
 
 void CudaDeviceRuntime::memcpyAsync(void* dst, DI dst_dev,
                     const void* src, DI src_dev,
-                    size_t bytes, StreamHandle stream) {
+                    size_t bytes, IStream stream) {
     (void)src_dev;
     setCurrentDevice(dst_dev);
 

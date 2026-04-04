@@ -15,7 +15,7 @@ namespace EC::Dev
 // CPU Event 内部结构（记录状态+依赖）
 struct CpuEventData {
     std::atomic<bool> completed = false;       // 事件完成状态
-    std::vector<EventHandle> dependencies;     // 事件依赖（需先完成的事件）
+    std::vector<IEvent> dependencies;     // 事件依赖（需先完成的事件）
     std::mutex mtx;                            // 线程安全锁
 };
 
@@ -33,33 +33,33 @@ public:
     void deallocate(DI dev, void* ptr, MemoryType kind) override;
 
     // Stream 相关接口做空实现（CPU无流）
-    void* allocateAsync(DI dev, size_t bytes, MemoryType kind, StreamHandle stream) override {
+    void* allocateAsync(DI dev, size_t bytes, MemoryType kind, IStream stream) override {
         (void)stream;
         return allocate(dev, bytes, kind);
     }
-    void deallocateAsync(DI dev, void* ptr, MemoryType kind, StreamHandle stream) override {
+    void deallocateAsync(DI dev, void* ptr, MemoryType kind, IStream stream) override {
         (void)stream;
         deallocate(dev, ptr, kind);
     }
-    StreamHandle createStream(DI dev, int priority = 0) override {
+    IStream createStream(DI dev, int priority = 0) override {
         (void)dev; (void)priority;
-        return StreamHandle(nullptr, DI::cpu()); // 返回空流句柄
+        return IStream(nullptr, DI::cpu()); // 返回空流句柄
     }
-    void destroyStream(StreamHandle stream) override { (void)stream; }
-    void synchronizeStream(StreamHandle stream) override { (void)stream; }
+    void destroyStream(IStream stream) override { (void)stream; }
+    void synchronizeStream(IStream stream) override { (void)stream; }
 
     // 核心：强化的Event接口（保证执行顺序）
-    EventHandle createEvent(DI dev, bool timing = false) override;
-    void destroyEvent(EventHandle event) override;
-    void recordEvent(EventHandle event, StreamHandle stream) override;
-    bool queryEvent(EventHandle event) override;
-    void synchronizeEvent(EventHandle event) override;
-    void waitEvent(StreamHandle stream, EventHandle event) override;
+    IEvent createEvent(DI dev, bool timing = false) override;
+    void destroyEvent(IEvent event) override;
+    void recordEvent(IEvent event, IStream stream) override;
+    bool queryEvent(IEvent event) override;
+    void synchronizeEvent(IEvent event) override;
+    void waitEvent(IStream stream, IEvent event) override;
 
     // 拷贝接口：通过Event保证顺序（异步接口=同步+Event标记完成）
     void memcpyAsync(void* dst, DI dst_dev,
                      const void* src, DI src_dev,
-                     size_t bytes, StreamHandle stream) override;
+                     size_t bytes, IStream stream) override;
 
 private:
     // 管理CPU Event的内部数据
