@@ -4,6 +4,7 @@
 #ifdef EC_ENABLE_CUDA
 #include <cuda_runtime.h>
 #include "backends/abstract.hpp"
+#include "backends/cpu/exec.hpp"
 #include "runtime/task_executor.hpp"
 #include "util/logger.hpp"
 
@@ -123,8 +124,11 @@ public:
         }
     }
 
-    IEvent* record_event() override {
+    IEvent* recordCUDAEvent() override {
         return new CUDAEvent{};
+    }
+    IEvent* recordCPUEvent() override {
+        return new CPU::CPUEvent{};
     }
 
     void synchronize() override {

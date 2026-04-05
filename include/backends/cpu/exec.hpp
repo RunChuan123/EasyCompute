@@ -66,11 +66,13 @@ public:
             ev->synchronize();
         }
     }
-    IEvent* record_event()override{
+    IEvent* recordCPUEvent()override{
         return new CPUEvent{};
     }
     void synchronize()override{
-
+        for (auto& ev : events) {
+            wait_event(ev.get());
+        }
     }
     DI device() const override{
         return DI::cpu();
@@ -79,6 +81,7 @@ public:
 private:
     CPUStream():state_(std::make_unique<CPUStreamState>()){}
     std::unique_ptr<CPUStreamState> state_;
+    std::vector<std::shared_ptr<IEvent>> events;  // 存储所有事件的列表
 };
 
 struct CPUStreamState{
