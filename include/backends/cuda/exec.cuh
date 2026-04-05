@@ -149,6 +149,12 @@ private:
     std::vector<std::shared_ptr<IEvent>> events;  // 存储所有事件的列表
 };
 
+inline bool set_tt_stream(){
+
+}
+inline cudaStream_t get_tt_stream(){
+    
+}
 
 }
 #endif
