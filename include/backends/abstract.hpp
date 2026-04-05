@@ -3,11 +3,27 @@
 #include <cstddef>
 
 #include "tensor/device.hpp"
-#include "backends/plan.hpp"
-#include "runtime/task_executor.hpp"
 
-namespace EC::Dev
+// #include "runtime/task_scheduler.hpp"
+
+
+namespace EC{
+namespace TS
 {
+struct Task;
+} // namespace TS
+
+namespace Dev{
+
+
+
+
+enum class StreamType{
+    Default,
+    Compute,
+    Transfoer,
+    Background
+};
 
 /**
  * 任务提交队列
@@ -17,10 +33,10 @@ class IStream {
 public:
     virtual ~IStream() = default;
 
-    virtual void submit( TS::Task* task) const =0;
-    virtual void wait_event(IEvent* ev) =0;
-    virtual IEvent* recordCPUEvent(){return nullptr;} 
-    virtual IEvent* recordCUDAEvent(){return nullptr;} 
+    virtual void submit( std::shared_ptr<TS::Task> task) const =0;
+    virtual void wait_event(std::shared_ptr<IEvent> ev) =0;
+    virtual std::shared_ptr<IEvent> recordCPUEvent(){return nullptr;} 
+    virtual std::shared_ptr<IEvent> recordCUDAEvent(){return nullptr;} 
     virtual void synchronize() = 0;
     virtual DI device() const =0;
     // 未来可能会用到
@@ -50,4 +66,5 @@ public:
 };
 
 
+}
 }

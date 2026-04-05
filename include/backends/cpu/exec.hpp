@@ -6,7 +6,7 @@
 #include <deque>
 #include <atomic>
 
-#include "runtime/task_executor.hpp"
+#include "runtime/task_scheduler.hpp"
 #include "util/logger.hpp"
 
 namespace EC::Dev::CPU
@@ -58,20 +58,20 @@ public:
         }
         return stream;
     }
-    void submit(TS::Task* task)const override{
+    void submit(std::shared_ptr<TS::Task> task)const override{
         state_->push_task(task);
     }
-    void wait_event(IEvent* ev)override{
+    void wait_event(std::shared_ptr<IEvent> ev)override{
         if(ev){
             ev->synchronize();
         }
     }
-    IEvent* recordCPUEvent()override{
-        return new CPUEvent{};
+    std::shared_ptr<IEvent> recordCPUEvent()override{
+        return std::make_shared<IEvent>(CPUEvent{});
     }
     void synchronize()override{
-        for (auto& ev : events) {
-            wait_event(ev.get());
+        for (auto ev : events) {
+            wait_event(ev);
         }
     }
     DI device() const override{
@@ -88,11 +88,11 @@ struct CPUStreamState{
 public:
     std::mutex mtx_stm;
     std::condition_variable cv_stm;
-    std::deque<TS::Task*> queue_stm;
+    std::deque<std::shared_ptr<TS::Task>> queue_stm;
     bool running{false};
     // TODO： 先写一个 worker，未来可能扩展多线程提高并发
     std::thread worker;
-    void push_task(TS::Task* t){
+    void push_task(std::shared_ptr<TS::Task> t){
         if(t){
             std::lock_guard<std::mutex> lock(mtx_stm);
             queue_stm.push_back(t);
@@ -127,7 +127,7 @@ private:
     // 不需要用锁
     void worker_function(){
         while(true){
-            TS::Task* t = nullptr;
+            std::shared_ptr<TS::Task> t = nullptr;
             {
                 std::unique_lock<std::mutex> lock(mtx_stm);
                 cv_stm.wait(lock,[this](){return !queue_stm.empty() || !running;});
@@ -142,10 +142,17 @@ private:
             process_task(t);
         }
     }
-    void process_task(TS::Task* task){
+    void process_task(std::shared_ptr<TS::Task> task){
         if(task){
             LOG_INFO("processing task(name:",task->task_name,") in cpu stream worker:",std::this_thread::get_id());
+            task->status.store(TS::TaskStatus::Running, std::memory_order_release);
+   
             bool res = task->func();
+             if (task->end_event) {
+                task->end_event->set_complete();
+            }
+            TS::TaskScheduler::get_instance().on_task_finished(task, res);
+
             if(res){
                 LOG_INFO(task->task_name," done!");
             }else{
@@ -156,7 +163,9 @@ private:
 
 };
 
+inline std::shared_ptr<IStream> default_cpu_stream(){
 
+}
 
     
 } // namespace EC::Dev::CPU

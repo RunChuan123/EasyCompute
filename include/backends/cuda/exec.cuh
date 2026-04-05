@@ -35,11 +35,11 @@ struct CUDAStreamState {
 public:
     std::mutex mtx_stm;
     std::condition_variable cv_stm;
-    std::deque<TS::Task*> queue_stm;
+    std::deque<std::shared_ptr<TS::Task>> queue_stm;
     bool running{false};
     std::thread worker;
 
-    void push_task(TS::Task* t) {
+    void push_task(std::shared_ptr<TS::Task> t) {
         if (t) {
             std::lock_guard<std::mutex> lock(mtx_stm);
             queue_stm.push_back(t);
@@ -114,11 +114,11 @@ public:
         return stream;
     }
 
-    void submit(TS::Task* task) const override {
+    void submit(std::shared_ptr<TS::Task> task) const override {
         state_->push_task(task);
     }
 
-    void wait_event(IEvent* ev) override {
+    void wait_event(std::shared_ptr<IEvent> ev) override {
         if (ev) {
             ev->synchronize();
         }
@@ -153,7 +153,11 @@ inline bool set_tt_stream(){
 
 }
 inline cudaStream_t get_tt_stream(){
-    
+
+}
+
+inline std::shared_ptr<IStream> default_cuda_stream(){
+
 }
 
 }
