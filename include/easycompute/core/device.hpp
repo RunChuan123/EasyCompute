@@ -17,7 +17,10 @@ public:
   constexpr bool is_cpu() const { return type_ == DeviceType::CPU; }
   constexpr bool is_cuda() const { return type_ == DeviceType::CUDA; }
   std::string str() const { return std::string(is_cpu() ? "cpu:" : "cuda:") + std::to_string(index_); }
-  friend constexpr bool operator==(Device, Device) = default;
+  constexpr bool operator==(const Device& other) const {
+    return type_ == other.type_ && index_ == other.index_;
+  }
+  constexpr bool operator!=(const Device& other) const { return !(*this == other); }
 
 private:
   DeviceType type_;
@@ -25,4 +28,3 @@ private:
 };
 
 }  // namespace ec
-
