@@ -1,3 +1,0 @@
-EasyCompute
-
-一个机器学习库

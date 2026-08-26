@@ -1,49 +1,77 @@
-# EasyCompute/CMakeLists.txt
-cmake_minimum_required(VERSION 3.17)  
+cmake_minimum_required(VERSION 3.22)
 
-project(EasyCompute 
-        VERSION 1.0 
-        LANGUAGES CXX
-)
+project(EasyCompute VERSION 2.0.0 LANGUAGES CXX)
 
-option(EASY_COMPUTE_SANITIZE "Enable ASan/UBSan" OFF)
+option(EC_ENABLE_CUDA "Build the CUDA backend when a CUDA compiler is available" ON)
+option(EC_BUILD_TESTS "Build EasyCompute tests" ON)
+option(EC_BUILD_EXAMPLES "Build EasyCompute examples" ON)
+option(EC_ENABLE_SANITIZERS "Enable address and undefined-behaviour sanitizers" OFF)
 
-if(EASY_COMPUTE_SANITIZE)
-  add_compile_options(-O0 -g3 -fno-omit-frame-pointer -fsanitize=address,undefined)
-  add_link_options(-fsanitize=address,undefined)
-endif()
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_STANDARD 20)          # 推荐C++17，兼容所有现代特性
-set(CMAKE_CXX_STANDARD_REQUIRED ON) # 强制使用指定的C++标准
-set(CMAKE_CXX_EXTENSIONS OFF)       # 禁用编译器扩展（跨平台）
-
-
-option(EASY_COMPUTE_ENABLE_CUDA "Enable GPU support" ON)
-if(EASY_COMPUTE_ENABLE_CUDA)
+set(EC_HAS_CUDA OFF)
+if(EC_ENABLE_CUDA)
+  include(CheckLanguage)
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-    set(CMAKE_CUDA_EXTENSIONS OFF)
-    # 关键：指定CUDA架构（避免编译警告，适配你的GPU）
-    # 可填多个架构：比如 75(RTX20/30)、80(A100)、86(RTX30/40)、89(RTX40)、90(RTX50)
-    set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89)
+    set(EC_HAS_CUDA ON)
+  else()
+    message(STATUS "CUDA compiler not found; building the CPU backend only")
+  endif()
 endif()
 
-# 输出路径
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)  # 可执行文件
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)  # 动态库
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)  # 静态库
+add_library(easycompute
+  src/core/dtype.cpp
+  src/core/int_tuple.cpp
+  src/core/layout.cpp
+  src/memory/allocator.cpp
+  src/memory/storage.cpp
+  src/tensor/tensor.cpp
+)
+add_library(EasyCompute::easycompute ALIAS easycompute)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+target_include_directories(easycompute PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_compile_features(easycompute PUBLIC cxx_std_20)
+target_compile_options(easycompute PRIVATE
+  $<$<COMPILE_LANGUAGE:CXX>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>
+)
 
-# if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-#     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
-#     add_link_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
-# endif()
+if(EC_HAS_CUDA)
+  target_sources(easycompute PRIVATE
+    src/memory/allocator_cuda.cu
+    src/tensor/tensor_cuda.cu
+  )
+  target_compile_definitions(easycompute PUBLIC EC_HAS_CUDA=1)
+  set_target_properties(easycompute PROPERTIES
+    CUDA_ARCHITECTURES 75
+    CUDA_SEPARABLE_COMPILATION ON
+    POSITION_INDEPENDENT_CODE ON
+  )
+else()
+  target_compile_definitions(easycompute PUBLIC EC_HAS_CUDA=0)
+endif()
 
-add_subdirectory(src)
+if(EC_ENABLE_SANITIZERS AND NOT MSVC)
+  target_compile_options(easycompute PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+  target_link_options(easycompute PUBLIC -fsanitize=address,undefined)
+endif()
 
-add_subdirectory(example)  
+if(EC_BUILD_TESTS)
+  enable_testing()
+  add_executable(easycompute_tests tests/test_main.cpp)
+  target_link_libraries(easycompute_tests PRIVATE EasyCompute::easycompute)
+  add_test(NAME easycompute_tests COMMAND easycompute_tests)
+endif()
 
-# 可选：添加示例/测试程序（比如测试Buffer、Shape等）
-# add_subdirectory(examples)
-
+if(EC_BUILD_EXAMPLES)
+  add_executable(tensor_demo examples/tensor_demo.cpp)
+  target_link_libraries(tensor_demo PRIVATE EasyCompute::easycompute)
+endif()

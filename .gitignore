@@ -1,25 +1,18 @@
-# CMake构建目录（核心要忽略的）
-build/
-cmake-build-debug/
-cmake-build-release/
-
-# 编译产物
+build*/
+cmake-build-*/
+.cache/
+.idea/
+.vscode/
 *.o
 *.so
+*.dylib
 *.a
 *.out
 *.exe
 *.dll
-
-# CMake自动生成的文件
 CMakeCache.txt
 CMakeFiles/
-Makefile
 cmake_install.cmake
 compile_commands.json
-
-# VSCode/IDE配置
-
-.idea/
 *.swp
 *.swo
