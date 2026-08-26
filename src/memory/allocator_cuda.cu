@@ -16,7 +16,7 @@ void check_cuda(cudaError_t status, const char* operation) {
 class CUDAAllocator final : public Allocator {
 public:
   void* allocate(std::size_t nbytes, Device device) override {
-    if (device.type() != DeviceType::CUDA) throw DeviceError("CUDAAllocator received " + device.str());
+    if (device.type() != device_types::cuda) throw DeviceError("CUDAAllocator received " + device.str());
     if (nbytes == 0) return nullptr;
     check_cuda(cudaSetDevice(device.index()), "cudaSetDevice");
     void* pointer = nullptr;
@@ -66,11 +66,11 @@ void cuda_to_cuda(void* destination, Device destination_device,
 }  // namespace
 
 void register_cuda_memory_backend(DeviceRegistry& registry) {
-  registry.register_runtime(DeviceType::CUDA,
+  registry.register_runtime(device_types::cuda,
       DeviceRuntime{&cuda_allocator(), &cuda_runtime_available, &cuda_synchronize, false, "cuda"});
-  registry.register_copy(DeviceType::CPU, DeviceType::CUDA, &host_to_cuda);
-  registry.register_copy(DeviceType::CUDA, DeviceType::CPU, &cuda_to_host);
-  registry.register_copy(DeviceType::CUDA, DeviceType::CUDA, &cuda_to_cuda);
+  registry.register_copy(device_types::cpu, device_types::cuda, &host_to_cuda);
+  registry.register_copy(device_types::cuda, device_types::cpu, &cuda_to_host);
+  registry.register_copy(device_types::cuda, device_types::cuda, &cuda_to_cuda);
 }
 
 }  // namespace ec

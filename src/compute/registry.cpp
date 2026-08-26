@@ -16,7 +16,7 @@ std::string_view op_name(OpId op) {
 }
 
 std::size_t KernelKeyHash::operator()(const KernelKey& key) const noexcept {
-  const auto device = static_cast<std::size_t>(key.device);
+  const auto device = static_cast<std::size_t>(key.device.id());
   const auto dtype = static_cast<std::size_t>(key.dtype);
   const auto op = static_cast<std::size_t>(key.op);
   return (device << 24U) ^ (dtype << 16U) ^ op;
@@ -49,7 +49,7 @@ BinaryKernel KernelRegistry::find_binary(KernelKey key, const BinaryKernelCall& 
   std::ostringstream message;
   message << "no compatible kernel registered for op=" << op_name(key.op)
           << ", dtype=" << dtype_name(key.dtype)
-          << ", device=" << static_cast<int>(key.device);
+          << ", device=" << key.device.name();
   throw TensorError(message.str());
 }
 

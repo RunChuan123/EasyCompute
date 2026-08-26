@@ -23,10 +23,9 @@ struct MultiplyTag {
   static constexpr std::string_view name = "multiply";
 };
 
-struct CPUBackendTag { static constexpr DeviceType device_type = DeviceType::CPU; };
-struct CUDABackendTag { static constexpr DeviceType device_type = DeviceType::CUDA; };
+struct CPUBackendTag { static constexpr DeviceType device_type = device_types::cpu; };
+struct CUDABackendTag { static constexpr DeviceType device_type = device_types::cuda; };
 
 std::string_view op_name(OpId op);
 
 }  // namespace ec::compute
-

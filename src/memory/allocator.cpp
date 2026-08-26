@@ -12,7 +12,7 @@ namespace {
 class CPUAllocator final : public Allocator {
 public:
   void* allocate(std::size_t nbytes, Device device) override {
-    if (device.type() != DeviceType::CPU) throw DeviceError("CPUAllocator received " + device.str());
+    if (device.type() != device_types::cpu) throw DeviceError("CPUAllocator received " + device.str());
     if (nbytes == 0) return nullptr;
     return ::operator new(nbytes, std::align_val_t{64});
   }
@@ -30,20 +30,21 @@ void cpu_copy(void* destination, Device, const void* source, Device, std::size_t
 }
 
 std::string missing_backend(DeviceType type) {
-  return "no device runtime registered for device type " + std::to_string(static_cast<int>(type));
+  return "no device runtime registered for " + std::string(type.name()) +
+         " (id=" + std::to_string(type.id()) + ")";
 }
 
 }  // namespace
 
 std::size_t CopyRouteHash::operator()(const CopyRoute& route) const noexcept {
-  return (static_cast<std::size_t>(route.source) << 16U) ^ static_cast<std::size_t>(route.destination);
+  return (static_cast<std::size_t>(route.source.id()) << 16U) ^ route.destination.id();
 }
 
 void DeviceRegistry::register_runtime(DeviceType type, DeviceRuntime runtime) {
   if (runtime.allocator == nullptr || runtime.available == nullptr || runtime.synchronize == nullptr)
     throw DeviceError("device runtime registration is incomplete");
   std::lock_guard<std::mutex> lock(mutex_);
-  const auto [iterator, inserted] = runtimes_.emplace(type, runtime);
+  const auto [iterator, inserted] = runtimes_.emplace(type.id(), runtime);
   if (!inserted && iterator->second.allocator != runtime.allocator)
     throw DeviceError("a different runtime is already registered for this device type");
 }
@@ -58,7 +59,7 @@ void DeviceRegistry::register_copy(DeviceType source, DeviceType destination, De
 
 DeviceRuntime DeviceRegistry::find_runtime(DeviceType type) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  const auto iterator = runtimes_.find(type);
+  const auto iterator = runtimes_.find(type.id());
   if (iterator == runtimes_.end()) throw DeviceError(missing_backend(type));
   return iterator->second;
 }
@@ -68,8 +69,7 @@ DeviceCopy DeviceRegistry::find_copy(DeviceType source, DeviceType destination) 
   const auto iterator = copies_.find(CopyRoute{source, destination});
   if (iterator == copies_.end()) {
     std::ostringstream message;
-    message << "no copy route registered from device type " << static_cast<int>(source)
-            << " to " << static_cast<int>(destination);
+    message << "no copy route registered from " << source.name() << " to " << destination.name();
     throw DeviceError(message.str());
   }
   return iterator->second;
@@ -78,9 +78,9 @@ DeviceCopy DeviceRegistry::find_copy(DeviceType source, DeviceType destination) 
 DeviceRegistry& global_device_registry() { static DeviceRegistry registry; return registry; }
 
 void register_cpu_memory_backend(DeviceRegistry& registry) {
-  registry.register_runtime(DeviceType::CPU,
+  registry.register_runtime(device_types::cpu,
       DeviceRuntime{&cpu_allocator(), &cpu_available, &cpu_synchronize, true, "cpu"});
-  registry.register_copy(DeviceType::CPU, DeviceType::CPU, &cpu_copy);
+  registry.register_copy(device_types::cpu, device_types::cpu, &cpu_copy);
 }
 
 void ensure_builtin_device_backends_registered() {

@@ -56,6 +56,14 @@ void test_dtype() {
   }
 }
 
+void test_open_device_identity() {
+  constexpr ec::DeviceType mock_type{42, "mock"};
+  constexpr ec::Device mock_device{mock_type, 3};
+  CHECK(mock_device.type() == mock_type);
+  CHECK(mock_device.index() == 3);
+  CHECK(mock_device.str() == "mock:3");
+}
+
 void test_tensor_on(ec::Device device) {
   for (auto dtype : {ec::DType::Float32, ec::DType::Float16}) {
     const auto a = ec::Tensor::arange({2, 3}, dtype, device);
@@ -84,6 +92,7 @@ int main() {
   test_int_tuple();
   test_layout();
   test_dtype();
+  test_open_device_identity();
   CHECK(ec::device_available(ec::Device::cpu()));
   CHECK(ec::is_host_accessible(ec::Device::cpu()));
   test_tensor_on(ec::Device::cpu());

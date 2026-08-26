@@ -49,7 +49,7 @@ public:
 
 private:
   mutable std::mutex mutex_;
-  std::unordered_map<DeviceType, DeviceRuntime> runtimes_;
+  std::unordered_map<std::uint16_t, DeviceRuntime> runtimes_;
   std::unordered_map<CopyRoute, DeviceCopy, CopyRouteHash> copies_;
 };
 
