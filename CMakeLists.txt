@@ -29,6 +29,9 @@ add_library(easycompute
   src/core/dtype.cpp
   src/core/int_tuple.cpp
   src/core/layout.cpp
+  src/compute/dispatch.cpp
+  src/compute/registry.cpp
+  src/compute/cpu/binary.cpp
   src/memory/allocator.cpp
   src/memory/storage.cpp
   src/tensor/tensor.cpp
@@ -47,7 +50,7 @@ target_compile_options(easycompute PRIVATE
 if(EC_HAS_CUDA)
   target_sources(easycompute PRIVATE
     src/memory/allocator_cuda.cu
-    src/tensor/tensor_cuda.cu
+    src/compute/cuda/binary.cu
   )
   target_compile_definitions(easycompute PUBLIC EC_HAS_CUDA=1)
   set_target_properties(easycompute PROPERTIES

@@ -13,6 +13,8 @@
 
 namespace ec {
 
+namespace detail { class TensorAccess; }
+
 struct TensorImpl {
   std::shared_ptr<Storage> storage;
   layout::Layout layout;
@@ -55,14 +57,10 @@ public:
   std::vector<float> to_vector() const;
   std::string repr(std::size_t max_elements = 16) const;
 
-  friend Tensor add(const Tensor& lhs, const Tensor& rhs);
-  friend Tensor multiply(const Tensor& lhs, const Tensor& rhs);
-
 private:
+  friend class detail::TensorAccess;
   explicit Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
   const TensorImpl& impl() const;
-  static Tensor binary_cpu(const Tensor& lhs, const Tensor& rhs, bool is_multiply);
-  static Tensor binary_cuda(const Tensor& lhs, const Tensor& rhs, bool is_multiply);
   std::shared_ptr<TensorImpl> impl_;
 };
 

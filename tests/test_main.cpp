@@ -72,6 +72,9 @@ void test_tensor_on(ec::Device device) {
     CHECK(packed.is_contiguous());
     CHECK(packed.to_vector() == t.to_vector());
     CHECK(a.at({1, 2}) == 5.0F);
+
+    const auto doubled_transpose = t + t;
+    CHECK(doubled_transpose.to_vector() == std::vector<float>({0, 6, 2, 8, 4, 10}));
   }
 }
 
@@ -81,10 +84,11 @@ int main() {
   test_int_tuple();
   test_layout();
   test_dtype();
+  CHECK(ec::device_available(ec::Device::cpu()));
+  CHECK(ec::is_host_accessible(ec::Device::cpu()));
   test_tensor_on(ec::Device::cpu());
   if (ec::cuda_available()) test_tensor_on(ec::Device::cuda());
   if (failures != 0) { std::cerr << failures << " check(s) failed\n"; return 1; }
   std::cout << "all EasyCompute tests passed\n";
   return 0;
 }
-

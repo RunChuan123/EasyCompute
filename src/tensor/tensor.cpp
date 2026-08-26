@@ -10,11 +10,6 @@
 
 namespace ec {
 
-#if EC_HAS_CUDA
-void launch_binary_cuda(void* output, const void* lhs, const void* rhs,
-                        std::int64_t count, DType dtype, int operation, Device device);
-#endif
-
 namespace {
 
 void require_defined(const Tensor& tensor) {
@@ -57,13 +52,6 @@ std::shared_ptr<TensorImpl> make_impl(layout::Layout tensor_layout, DType dtype,
   const auto elements = tensor_layout.cosize();
   const auto bytes = static_cast<std::size_t>(elements) * item_size(dtype);
   return std::make_shared<TensorImpl>(TensorImpl{Storage::create(bytes, device), std::move(tensor_layout), 0, dtype});
-}
-
-void check_binary(const Tensor& lhs, const Tensor& rhs) {
-  require_defined(lhs); require_defined(rhs);
-  if (lhs.shape() != rhs.shape()) throw TensorError("binary operation shape mismatch");
-  if (lhs.dtype() != rhs.dtype()) throw TensorError("binary operation dtype mismatch");
-  if (lhs.device() != rhs.device()) throw TensorError("binary operation device mismatch");
 }
 
 }  // namespace
@@ -148,13 +136,13 @@ Tensor Tensor::to(DType destination) const {
 }
 
 float Tensor::at(const layout::Coord& coordinate) const {
-  if (!device().is_cpu()) return to(Device::cpu()).at(coordinate);
+  if (!is_host_accessible(device())) return to(Device::cpu()).at(coordinate);
   const auto offset = storage_offset() + get_layout()(coordinate);
   return read_value(impl().storage->data(), dtype(), offset);
 }
 
 std::vector<float> Tensor::to_vector() const {
-  if (!device().is_cpu()) return to(Device::cpu()).to_vector();
+  if (!is_host_accessible(device())) return to(Device::cpu()).to_vector();
   std::vector<float> values(static_cast<std::size_t>(numel()));
   for (std::int64_t i = 0; i < numel(); ++i) {
     const auto coordinate = row_major_coordinate(shape(), i);
@@ -177,46 +165,6 @@ std::string Tensor::repr(std::size_t max_elements) const {
   if (count < values.size()) out << ", ...";
   out << "])";
   return out.str();
-}
-
-Tensor Tensor::binary_cpu(const Tensor& lhs, const Tensor& rhs, bool is_multiply) {
-  auto output = Tensor::zeros(lhs.shape(), lhs.dtype(), lhs.device());
-  const auto* lhs_data = lhs.impl().storage->data();
-  const auto* rhs_data = rhs.impl().storage->data();
-  auto* output_data = output.impl_->storage->data();
-  for (std::int64_t i = 0; i < lhs.numel(); ++i) {
-    const auto coordinate = row_major_coordinate(lhs.shape(), i);
-    const auto lhs_offset = lhs.storage_offset() + lhs.get_layout()(coordinate);
-    const auto rhs_offset = rhs.storage_offset() + rhs.get_layout()(coordinate);
-    const float a = read_value(lhs_data, lhs.dtype(), lhs_offset);
-    const float b = read_value(rhs_data, rhs.dtype(), rhs_offset);
-    write_value(output_data, output.dtype(), i, is_multiply ? a * b : a + b);
-  }
-  return output;
-}
-
-Tensor Tensor::binary_cuda(const Tensor& lhs, const Tensor& rhs, bool is_multiply) {
-#if EC_HAS_CUDA
-  const Tensor a = lhs.contiguous();
-  const Tensor b = rhs.contiguous();
-  Tensor output = Tensor::zeros(lhs.shape(), lhs.dtype(), lhs.device());
-  launch_binary_cuda(output.impl_->storage->data(), a.impl().storage->data(), b.impl().storage->data(),
-                     lhs.numel(), lhs.dtype(), is_multiply ? 1 : 0, lhs.device());
-  return output;
-#else
-  (void)lhs; (void)rhs; (void)is_multiply;
-  throw DeviceError("CUDA binary operation requested from a CPU-only build");
-#endif
-}
-
-Tensor add(const Tensor& lhs, const Tensor& rhs) {
-  check_binary(lhs, rhs);
-  return lhs.device().is_cpu() ? Tensor::binary_cpu(lhs, rhs, false) : Tensor::binary_cuda(lhs, rhs, false);
-}
-
-Tensor multiply(const Tensor& lhs, const Tensor& rhs) {
-  check_binary(lhs, rhs);
-  return lhs.device().is_cpu() ? Tensor::binary_cpu(lhs, rhs, true) : Tensor::binary_cuda(lhs, rhs, true);
 }
 
 std::ostream& operator<<(std::ostream& out, const Tensor& tensor) { return out << tensor.repr(); }
