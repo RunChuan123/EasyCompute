@@ -9,6 +9,8 @@
 
 namespace ec {
 
+class Runtime;
+
 class Allocator {
 public:
   virtual ~Allocator() = default;
@@ -54,6 +56,7 @@ private:
 };
 
 DeviceRegistry& global_device_registry();
+DeviceRegistry& device_registry(Runtime& runtime);
 void ensure_builtin_device_backends_registered();
 void register_cpu_memory_backend(DeviceRegistry& registry);
 #if EC_HAS_CUDA

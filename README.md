@@ -11,6 +11,7 @@ The current vertical slice provides:
 - CPU and CUDA allocators with one-owner `Storage` lifetime;
 - strided Tensor views, device/dtype copies, addition, multiplication, and printing;
 - CPU tests that automatically exercise CUDA when a GPU is available.
+- isolated runtimes with transactional, versioned capability and static-plugin registration.
 
 ```bash
 cmake -S . -B build -DEC_ENABLE_CUDA=OFF
@@ -22,4 +23,3 @@ ctest --test-dir build --output-on-failure
 CUDA is enabled automatically when `nvcc` is available.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for invariants and the roadmap.
-

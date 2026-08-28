@@ -26,9 +26,14 @@ if(EC_ENABLE_CUDA)
 endif()
 
 add_library(easycompute
+  src/core/builtin_plugins.cpp
+  src/core/capability.cpp
   src/core/dtype.cpp
+  src/core/id.cpp
   src/core/int_tuple.cpp
   src/core/layout.cpp
+  src/core/plugin.cpp
+  src/core/runtime.cpp
   src/compute/dispatch.cpp
   src/compute/registry.cpp
   src/compute/cpu/binary.cpp

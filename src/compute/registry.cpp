@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "easycompute/core/error.hpp"
+#include "easycompute/core/runtime.hpp"
 
 namespace ec::compute {
 
@@ -53,20 +54,11 @@ BinaryKernel KernelRegistry::find_binary(KernelKey key, const BinaryKernelCall& 
   throw TensorError(message.str());
 }
 
-KernelRegistry& global_kernel_registry() {
-  static KernelRegistry registry;
-  return registry;
-}
+KernelRegistry& kernel_registry(ec::Runtime& runtime) { return runtime.kernels(); }
+KernelRegistry& global_kernel_registry() { return kernel_registry(default_runtime()); }
 
 void ensure_builtin_kernels_registered() {
-  static std::once_flag once;
-  std::call_once(once, [] {
-    auto& registry = global_kernel_registry();
-    register_cpu_kernels(registry);
-#if EC_HAS_CUDA
-    register_cuda_kernels(registry);
-#endif
-  });
+  ensure_builtin_plugins_registered();
 }
 
 }  // namespace ec::compute

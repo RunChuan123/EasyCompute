@@ -8,6 +8,8 @@
 #include "easycompute/compute/op.hpp"
 #include "easycompute/core/dtype.hpp"
 
+namespace ec { class Runtime; }
+
 namespace ec::compute {
 
 struct KernelKey {
@@ -41,6 +43,7 @@ private:
 };
 
 KernelRegistry& global_kernel_registry();
+KernelRegistry& kernel_registry(ec::Runtime& runtime);
 void ensure_builtin_kernels_registered();
 void register_cpu_kernels(KernelRegistry& registry);
 #if EC_HAS_CUDA

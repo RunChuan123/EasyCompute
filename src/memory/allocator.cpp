@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "easycompute/core/error.hpp"
+#include "easycompute/core/runtime.hpp"
 
 namespace ec {
 namespace {
@@ -75,7 +76,8 @@ DeviceCopy DeviceRegistry::find_copy(DeviceType source, DeviceType destination) 
   return iterator->second;
 }
 
-DeviceRegistry& global_device_registry() { static DeviceRegistry registry; return registry; }
+DeviceRegistry& device_registry(Runtime& runtime) { return runtime.devices(); }
+DeviceRegistry& global_device_registry() { return device_registry(default_runtime()); }
 
 void register_cpu_memory_backend(DeviceRegistry& registry) {
   registry.register_runtime(device_types::cpu,
@@ -84,14 +86,7 @@ void register_cpu_memory_backend(DeviceRegistry& registry) {
 }
 
 void ensure_builtin_device_backends_registered() {
-  static std::once_flag once;
-  std::call_once(once, [] {
-    auto& registry = global_device_registry();
-    register_cpu_memory_backend(registry);
-#if EC_HAS_CUDA
-    register_cuda_memory_backend(registry);
-#endif
-  });
+  ensure_builtin_plugins_registered();
 }
 
 Allocator& allocator_for(Device device) {

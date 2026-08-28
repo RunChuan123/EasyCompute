@@ -9,6 +9,26 @@
 5. DType and Device combinations are either tested or rejected. There are no advertised placeholder types.
 6. Eager autograd graphs and serializable trace graphs are separate systems.
 7. Every commit on the rewrite branch must build and pass the CPU test suite.
+8. Stable extension keys are serialized; compact `RuntimeId` values exist only inside one Runtime.
+9. Replaceable behavior is registered as a versioned capability provider. CPU and CUDA are built-in plugins.
+10. Capability registration is transactional and published as an immutable, epoch-numbered snapshot.
+
+## Runtime and plugin boundary
+
+Each `Runtime` owns its identity table, capability snapshots, plugin manager, device registry, and
+kernel registry. `default_runtime()` is a compatibility convenience for the eager Tensor API, not a
+process-wide architectural requirement. Tests and future embedding applications may create isolated
+Runtime instances.
+
+Plugins use namespaced `ExtensionKey` values for stable identity. Loading interns those keys into
+Runtime-local integer IDs and stages every capability in a `RegistrationTransaction`. A successful
+commit atomically publishes a new immutable snapshot; a rejected plugin does not expose partial
+capabilities. The current static plugin descriptor is intentionally a C++ bootstrap interface. A
+future dynamic-library boundary will use a versioned C ABI rather than exporting C++ virtual types.
+
+The built-in CPU and CUDA plugins currently adapt the existing typed memory and kernel registries.
+This preserves the working Tensor vertical slice while later milestones replace allocator pointers,
+synchronous CUDA completion, closed dtype IDs, and binary-only call frames.
 
 ## Layout model
 
